@@ -1,19 +1,25 @@
 name: uniqmaker
-description: "A new Flutter project."
-publish_to: 'none'
-version: 0.1.0
+description: A new Flutter project.
+publish_to: 'none' # This prevents publishing to pub.dev
+
+version: 0.1.0+1
 
 environment:
-  sdk: ^3.6.0
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
+  signature: ^5.4.0
+  pdf: ^3.10.0
+  printing: ^5.10.1
+  open_file: ^3.3.1
+  path_provider: ^2.0.15
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true

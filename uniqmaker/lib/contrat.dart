@@ -1,19 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:signature/signature.dart';
+import 'package:flutter/services.dart';
+import 'package:pdf/widgets.dart' as pw;
+// Removed unused import
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
-class SubscriptionSelectionScreen extends StatefulWidget {
-  const SubscriptionSelectionScreen({super.key});
+class ContractSignatureScreen extends StatefulWidget {
+  const ContractSignatureScreen({super.key});
 
   @override
-  State<SubscriptionSelectionScreen> createState() => _SubscriptionSelectionScreenState();
+  State<ContractSignatureScreen> createState() => _ContractSignatureScreenState();
 }
 
-class _SubscriptionSelectionScreenState extends State<SubscriptionSelectionScreen> {
-  String? selectedPlan;
+class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
+  final SignatureController _signatureController = SignatureController(
+    penStrokeWidth: 3,
+    penColor: Colors.black,
+  );
+  bool _isContractGenerated = false;
+  bool _isContractRead = false;
+  File? _generatedContract;
+
+  @override
+  void dispose() {
+    _signatureController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _generateContract() async {
+    try {
+      // Création du PDF
+      final pdf = pw.Document();
+      
+      pdf.addPage(
+        pw.Page(
+          build: (pw.Context context) {
+            return pw.Column(
+              children: [
+                pw.Header(level: 0, text: 'Contrat Uniqmaker'),
+                pw.Paragraph(text: 'Ceci est votre contrat officiel avec Uniqmaker.'),
+                pw.Paragraph(text: 'En signant ce document, vous acceptez les termes et conditions.'),
+                pw.SizedBox(height: 20),
+                pw.Header(level: 1, text: 'Détails du contrat'),
+                // Ajoutez ici le contenu spécifique du contrat
+              ],
+            );
+          },
+        ),
+      );
+
+      // Sauvegarde temporaire du PDF
+      final output = await getTemporaryDirectory();
+      final file = File('${output.path}/contrat_uniqmaker.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      setState(() {
+        _generatedContract = file;
+        _isContractGenerated = true;
+        _isContractRead = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Contrat généré avec succès')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la génération: $e')),
+      );
+    }
+  }
+
+  Future<void> _viewContract() async {
+    if (_generatedContract != null) {
+      await OpenFile.open(_generatedContract!.path);
+      setState(() {
+        _isContractRead = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment(0, -0.2),
@@ -24,322 +97,156 @@ class _SubscriptionSelectionScreenState extends State<SubscriptionSelectionScree
             ],
           ),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Logo + back arrow
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    Image.asset(
-                      'assets/logo.png',
-                      width: 100,
-                      height: 100,
-                    ),
-                    const SizedBox(width: 48), // espace équivalent au bouton
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Choisissez votre abonnement',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Option Mensuelle
-                _SubscriptionRadio(
-                  title: 'Mensuel',
-                  price: '9,99€/mois',
-                  isSelected: selectedPlan == 'monthly',
-                  onTap: () => setState(() => selectedPlan = 'monthly'),
-                ),
-                const SizedBox(height: 16),
-
-                // Option Annuelle
-                _SubscriptionRadio(
-                  title: 'Annuel',
-                  price: '99€/an',
-                  isSelected: selectedPlan == 'yearly',
-                  isPopular: true,
-                  onTap: () => setState(() => selectedPlan = 'yearly'),
-                ),
-                const Spacer(),
-
-                ElevatedButton(
-                  onPressed: selectedPlan != null
-                      ? () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PaymentScreen(
-                                plan: selectedPlan!,
-                                planPrice: selectedPlan == 'monthly' ? 9.99 : 99.0,
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFF28C36),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 2,
-                  ),
-                  child: const Text(
-                    'Continuer',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SubscriptionRadio extends StatelessWidget {
-  final String title;
-  final String price;
-  final bool isSelected;
-  final bool isPopular;
-  final VoidCallback onTap;
-
-  const _SubscriptionRadio({
-    required this.title,
-    required this.price,
-    required this.isSelected,
-    this.isPopular = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.9) : Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Color(0xFFF28C36) : Colors.white70,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Radio<String>(
-              value: title,
-              groupValue: isSelected ? title : null,
-              onChanged: (_) => onTap(),
-              activeColor: Color(0xFFF28C36),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  Text(
-                    price,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  if (isPopular)
-                    Container(
-                      margin: const EdgeInsets.only(top: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Le plus populaire',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.amber.shade900,
-                        ),
-                      ),
-                    ),
-                ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 60),
+              Image.asset(
+                'assets/logo.png',
+                width: 100,
+                height: 100,
+                errorBuilder: (_, __, ___) => const Icon(Icons.description, size: 100, color: Colors.white),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+              const SizedBox(height: 40),
+              const Text(
+                "Signez votre contrat",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 30),
 
-class PaymentScreen extends StatelessWidget {
-  final String plan;
-  final double planPrice;
+              // Bouton Générer le contrat
+              if (!_isContractGenerated)
+                ElevatedButton(
+                  onPressed: _generateContract,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF28C36),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text("Générer le contrat"),
+                ),
 
-  const PaymentScreen({
-    super.key,
-    required this.plan,
-    required this.planPrice,
-  });
+              if (_isContractGenerated) ...[
+                ElevatedButton(
+                  onPressed: _viewContract,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text("Lire et approuver"),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Veuillez lire le contrat avant de signer",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
 
-  @override
-  Widget build(BuildContext context) {
-    final double vat = planPrice * 0.2;
-    final double total = planPrice + vat;
+              const SizedBox(height: 30),
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.2),
-            radius: 1.2,
-            colors: [
-              Color(0xFFFFE5C2),
-              Color(0xFFF2B36D),
+              // Zone de signature (visible seulement après lecture)
+              if (_isContractRead) ...[
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Signature(
+                    controller: _signatureController,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Boutons Signer et Effacer (visible seulement après lecture)
+              if (_isContractRead) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (_signatureController.isNotEmpty) {
+                            final signature = await _signatureController.toPngBytes();
+                            if (signature != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Contrat signé avec succès')),
+                              );
+                              // Ici vous pourriez sauvegarder la signature avec le contrat
+                            }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Veuillez signer le contrat')),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF28C36),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Signer"),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => _signatureController.clear(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade400,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Effacer"),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+              ],
+
+              // Bouton continuer (visible seulement après signature)
+              if (_signatureController.isNotEmpty && _isContractRead)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      // Action de navigation ici
+                      // Navigator.push(...);
+                    },
+                    child: const Text(
+                      "continuer",
+                      style: TextStyle(
+                        color: Color(0xFFF28C36),
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top Bar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    Image.asset(
-                      'assets/logo.png',
-                      width: 100,
-                      height: 100,
-                    ),
-                    const SizedBox(width: 48),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Résumé de la commande',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildSummaryRow('Abonnement ${plan == 'monthly' ? 'mensuel' : 'annuel'}', '${planPrice.toStringAsFixed(2)} €'),
-                      const Divider(),
-                      _buildSummaryRow('TVA (20%)', '${vat.toStringAsFixed(2)} €'),
-                      const Divider(),
-                      _buildSummaryRow('Total', '${total.toStringAsFixed(2)} €', isTotal: true),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                const Text(
-                  'Informations de paiement',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildInput('Nom sur la carte'),
-                const SizedBox(height: 16),
-                _buildInput('Numéro de carte', keyboardType: TextInputType.number),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildInput('Date d\'expiration')),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildInput('Code de sécurité', keyboardType: TextInputType.number)),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Paiement en cours de traitement...')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFF28C36),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Payer maintenant', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInput(String label, {TextInputType? keyboardType}) {
-    return TextFormField(
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
-        border: const OutlineInputBorder(),
-      ),
-      keyboardType: keyboardType,
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 16, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(value, style: TextStyle(fontSize: 16, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-        ],
       ),
     );
   }

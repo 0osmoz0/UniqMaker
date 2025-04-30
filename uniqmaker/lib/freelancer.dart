@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'contrat.dart';
+import 'package:uniqmaker/subscribe.dart';
 
 class FreelancerScreen extends StatelessWidget {
   const FreelancerScreen ({super.key});
