@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:signature/signature.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/widgets.dart' as pw;
-// Removed unused import
+import 'package:uniqmaker/freelancerHome.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -31,9 +31,7 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
 
   Future<void> _generateContract() async {
     try {
-      // Création du PDF
       final pdf = pw.Document();
-      
       pdf.addPage(
         pw.Page(
           build: (pw.Context context) {
@@ -44,14 +42,12 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
                 pw.Paragraph(text: 'En signant ce document, vous acceptez les termes et conditions.'),
                 pw.SizedBox(height: 20),
                 pw.Header(level: 1, text: 'Détails du contrat'),
-                // Ajoutez ici le contenu spécifique du contrat
               ],
             );
           },
         ),
       );
 
-      // Sauvegarde temporaire du PDF
       final output = await getTemporaryDirectory();
       final file = File('${output.path}/contrat_uniqmaker.pdf');
       await file.writeAsBytes(await pdf.save());
@@ -120,7 +116,6 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
               ),
               const SizedBox(height: 30),
 
-              // Bouton Générer le contrat
               if (!_isContractGenerated)
                 ElevatedButton(
                   onPressed: _generateContract,
@@ -157,7 +152,6 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
 
               const SizedBox(height: 30),
 
-              // Zone de signature (visible seulement après lecture)
               if (_isContractRead) ...[
                 Container(
                   height: 200,
@@ -174,7 +168,6 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
                 const SizedBox(height: 20),
               ],
 
-              // Boutons Signer et Effacer (visible seulement après lecture)
               if (_isContractRead) ...[
                 Row(
                   children: [
@@ -187,7 +180,14 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Contrat signé avec succès')),
                               );
-                              // Ici vous pourriez sauvegarder la signature avec le contrat
+
+                              // Redirige vers la HomePage
+                              Future.delayed(const Duration(milliseconds: 800), () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const HomePage()),
+                                );
+                              });
                             }
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -225,25 +225,6 @@ class _ContractSignatureScreenState extends State<ContractSignatureScreen> {
                 ),
                 const SizedBox(height: 30),
               ],
-
-              // Bouton continuer (visible seulement après signature)
-              if (_signatureController.isNotEmpty && _isContractRead)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // Action de navigation ici
-                      // Navigator.push(...);
-                    },
-                    child: const Text(
-                      "continuer",
-                      style: TextStyle(
-                        color: Color(0xFFF28C36),
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

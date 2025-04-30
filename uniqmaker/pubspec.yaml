@@ -15,6 +15,7 @@ dependencies:
   printing: ^5.10.1
   open_file: ^3.3.1
   path_provider: ^2.0.15
+  animated_bottom_navigation_bar: ^1.0.1
 
 dev_dependencies:
   flutter_test:
@@ -26,3 +27,9 @@ flutter:
 
   assets:
     - assets/logo.png
+    - assets/mug.png
+    - assets/sac.png
+    - assets/textile.png
+    - assets/tote.png
+    - assets/carnet.png
+    - assets/stylo.png
