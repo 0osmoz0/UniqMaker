@@ -54,118 +54,120 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return _buildHomeContent();
       case 1:
-        return CataloguePage(); // À créer dans catalogue.dart
+        return CataloguePage();
       default:
         return const Center(child: Text("Page en cours de construction..."));
     }
   }
 
   Widget _buildHomeContent() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 80),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {},
-                ),
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundImage: AssetImage('assets/profile.jpg'),
-                ),
-              ],
-            ),
-          ),
-
-          // HEADER - CA
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.orange[100],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Votre CA est de 10 500 €",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 234, 153, 128),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-                    style: TextStyle(color: Colors.black87),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
+                  IconButton(
+                    icon: const Icon(Icons.more_vert),
                     onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.deepOrange,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: const Text("Voir mon tableau de bord"),
+                  ),
+                  const CircleAvatar(
+                    radius: 20,
+                    backgroundImage: AssetImage('assets/profile.jpg'),
                   ),
                 ],
               ),
             ),
-          ),
 
-          // Catégories
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text("Catégories", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 140,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                return CategoryCard(
-                  name: categories[index]['name']!,
-                  imagePath: categories[index]['image']!,
-                );
-              },
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.orange[100],
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Votre slogan ici",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepOrange,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.deepOrange,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text("Voir le catalogue"),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
 
-          // Promotions
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-            child: Text("Promotion d’aujourd’hui", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          ),
-          SizedBox(
-            height: 180,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: promotions.length,
-              itemBuilder: (context, index) {
-                return PromoCard(
-                  discount: promotions[index]['discount']!,
-                  imagePath: promotions[index]['image']!,
-                );
-              },
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text("Catégories", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  return CategoryCard(
+                    name: categories[index]['name']!,
+                    imagePath: categories[index]['image']!,
+                  );
+                },
+              ),
+            ),
+
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+              child: Text("Promotion d’aujourd’hui", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            ),
+
+            SizedBox(
+              height: 180,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: promotions.length,
+                itemBuilder: (context, index) {
+                  return PromoCard(
+                    discount: promotions[index]['discount']!,
+                    imagePath: promotions[index]['image']!,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -173,7 +175,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(child: _buildBody()),
+      body: _buildBody(),
       bottomNavigationBar: AnimatedBottomNavigationBar.builder(
         itemCount: iconList.length,
         tabBuilder: (index, isActive) {
@@ -213,7 +215,9 @@ class CategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        // Action à définir
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(

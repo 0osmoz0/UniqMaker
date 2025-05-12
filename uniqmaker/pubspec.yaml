@@ -17,10 +17,13 @@ dependencies:
   path_provider: ^2.0.15
   animated_bottom_navigation_bar: ^1.0.1
 
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  
 
 flutter:
   uses-material-design: true
@@ -33,3 +36,5 @@ flutter:
     - assets/tote.png
     - assets/carnet.png
     - assets/stylo.png
+    - assets/paraplui.png
+    - assets/profile.jpg

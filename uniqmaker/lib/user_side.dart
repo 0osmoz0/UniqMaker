@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uniqmaker/userHome.dart';
 
 class UserScreen extends StatelessWidget {
   const UserScreen({super.key});
@@ -336,7 +337,13 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    // Ajoute ton action ici
+                    // Action à faire sur continuer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HomePage(),
+                      ),
+                    );
                   },
                   child: const Text(
                     "continuer",
