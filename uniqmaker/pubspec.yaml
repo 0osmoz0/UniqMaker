@@ -16,6 +16,8 @@ dependencies:
   open_file: ^3.3.1
   path_provider: ^2.0.15
   animated_bottom_navigation_bar: ^1.0.1
+  image_picker: ^1.0.4
+
 
 
 
