@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:uniqmaker/catalogue.dart'; 
+import 'package:uniqmaker/stats.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -54,7 +55,9 @@ class _HomePageState extends State<HomePage> {
       case 0:
         return _buildHomeContent();
       case 1:
-        return CataloguePage(); // À créer dans catalogue.dart
+        return CataloguePage(); 
+      case 2:
+        return FreelancerStatsPage(); 
       default:
         return const Center(child: Text("Page en cours de construction..."));
     }
