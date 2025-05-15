@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:uniqmaker/ProfilePage.dart';
 
 class CataloguePage extends StatelessWidget {
   final List<String> categories = [
@@ -36,10 +37,17 @@ class CataloguePage extends StatelessWidget {
         title: const Text("Catalogue", style: TextStyle(fontWeight: FontWeight.w600)),
         backgroundColor: Colors.transparent,
         actions: [
+          //clickable
+
           Padding(
             padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector (
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
+              },
             child: CircleAvatar(
               backgroundImage: AssetImage("assets/profile.jpg"),
+            ),
             ),
           )
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:uniqmaker/ProfilePage.dart';
 
 class FreelancerStatsPage extends StatelessWidget {
   const FreelancerStatsPage({super.key});
@@ -17,12 +18,29 @@ class FreelancerStatsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Mes Statistiques',
             style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.white),
+
+        // circle avatar
+        actions: [
+          Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+      },
+      child: const CircleAvatar(
+        radius: 20,
+        backgroundImage: AssetImage('assets/profile.jpg'),
+      )
+            ),
+        ),
+      ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
