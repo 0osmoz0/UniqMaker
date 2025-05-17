@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:uniqmaker/catalogue.dart'; 
 import 'package:uniqmaker/stats.dart';
+import 'package:uniqmaker/ProfilePage.dart';
+import 'package:uniqmaker/exercicePage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,7 +61,7 @@ class _HomePageState extends State<HomePage> {
       case 2:
         return FreelancerStatsPage(); 
       default:
-        return const Center(child: Text("Page en cours de construction..."));
+        return ExercisesListPage();
     }
   }
 
@@ -80,9 +82,14 @@ class _HomePageState extends State<HomePage> {
                   icon: const Icon(Icons.more_vert),
                   onPressed: () {},
                 ),
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundImage: AssetImage('assets/profile.jpg'),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+                  },
+                  child: const CircleAvatar(
+                    radius: 20,
+                    backgroundImage: AssetImage('assets/profile.jpg'),
+                  ),
                 ),
               ],
             ),

@@ -14,6 +14,11 @@ class _ProfilePageState extends State<ProfilePage> {
   File? profileImageFile;
   String name = 'Sophie Martin';
   String bio = 'Créatrice de produits artisanaux';
+  String email = 'sophie.martin@example.com';
+  String phone = '+33 6 12 34 56 78';
+  String location = 'Paris, France';
+  String work = 'Freelance depuis 2020';
+  bool isEditing = false;
 
   Future<void> _pickImage(bool isProfile) async {
     final picker = ImagePicker();
@@ -24,6 +29,55 @@ class _ProfilePageState extends State<ProfilePage> {
         profileImageFile = File(pickedFile.path);
       });
     }
+  }
+
+  Future<void> _showEditDialog(String field, String currentValue) async {
+    final TextEditingController controller = TextEditingController(text: currentValue);
+    
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Modifier $field'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: 'Entrez votre $field'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                switch (field) {
+                  case 'nom':
+                    name = controller.text;
+                    break;
+                  case 'bio':
+                    bio = controller.text;
+                    break;
+                  case 'email':
+                    email = controller.text;
+                    break;
+                  case 'téléphone':
+                    phone = controller.text;
+                    break;
+                  case 'localisation':
+                    location = controller.text;
+                    break;
+                  case 'profession':
+                    work = controller.text;
+                    break;
+                }
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -60,12 +114,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   Positioned(
                     top: -50,
                     left: -50,
-                    child: _buildCircle(180, Colors.white.withOpacity(0.1)),
+                    child: _buildCircle(180, Colors.white.withAlpha(25)), // Replaced withAlpha
                   ),
                   Positioned(
                     bottom: -40,
                     right: -30,
-                    child: _buildCircle(100, Colors.white.withOpacity(0.15)),
+                    child: _buildCircle(100, Colors.white.withAlpha(38)), // Replaced withAlpha
                   ),
                   Positioned(
                     top: 80,
@@ -91,15 +145,47 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        Text(name,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold)),
+                        isEditing
+                            ? InkWell(
+                                onTap: () => _showEditDialog('nom', name),
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                         const SizedBox(height: 4),
-                        Text(bio,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 14)),
+                        isEditing
+                            ? InkWell(
+                                onTap: () => _showEditDialog('bio', bio),
+                                child: Text(
+                                  bio,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                bio,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                              ),
                       ],
                     ),
                   ),
@@ -108,9 +194,11 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white),
+                icon: Icon(isEditing ? Icons.check : Icons.edit, color: Colors.white),
                 onPressed: () {
-                  // Implémente la modification ici
+                  setState(() {
+                    isEditing = !isEditing;
+                  });
                 },
               ),
             ],
@@ -145,25 +233,38 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            _buildInfoRow(Icons.email, 'sophie.martin@example.com', textColor),
+            _buildInfoRow(Icons.email, email, textColor, 'email'),
             const Divider(height: 20),
-            _buildInfoRow(Icons.phone, '+33 6 12 34 56 78', textColor),
+            _buildInfoRow(Icons.phone, phone, textColor, 'téléphone'),
             const Divider(height: 20),
-            _buildInfoRow(Icons.location_on, 'Paris, France', textColor),
+            _buildInfoRow(Icons.location_on, location, textColor, 'localisation'),
             const Divider(height: 20),
-            _buildInfoRow(Icons.work, 'Freelance depuis 2020', textColor),
+            _buildInfoRow(Icons.work, work, textColor, 'profession'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text, Color color) {
+  Widget _buildInfoRow(IconData icon, String text, Color color, String field) {
     return Row(
       children: [
         Icon(icon, color: color.withOpacity(0.8)),
         const SizedBox(width: 16),
-        Expanded(child: Text(text, style: TextStyle(color: color))),
+        Expanded(
+          child: isEditing
+              ? InkWell(
+                  onTap: () => _showEditDialog(field, text),
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: color,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                )
+              : Text(text, style: TextStyle(color: color)),
+        ),
       ],
     );
   }

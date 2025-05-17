@@ -5,29 +5,28 @@ publish_to: 'none' # This prevents publishing to pub.dev
 version: 0.1.0+1
 
 environment:
-  sdk: '>=3.6.0 <4.0.0'
+  sdk: ">=2.17.0 <4.0.0" # Version minimum augmentée à 2.17.0 pour plus de compatibilité
 
 dependencies:
   flutter:
     sdk: flutter
+  
+  # Packages mis à jour avec versions null-safety
   signature: ^5.4.0
   pdf: ^3.10.0
   printing: ^5.10.1
   open_file: ^3.3.1
   path_provider: ^2.0.15
   animated_bottom_navigation_bar: ^1.0.1
-  image_picker: ^1.0.4
+  image_picker: ^0.8.7+3 # Version null-safety
   charts_flutter: ^0.12.0
   fl_chart: ^0.71.0
-
-
-
+  url_launcher: ^6.1.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  
 
 flutter:
   uses-material-design: true

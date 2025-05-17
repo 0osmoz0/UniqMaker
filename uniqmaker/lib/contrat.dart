@@ -3,6 +3,7 @@ import 'package:signature/signature.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:uniqmaker/freelancerHome.dart';
+import 'package:uniqmaker/homePage.dart'; // Ensure this is the correct path to the HomePage class
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
