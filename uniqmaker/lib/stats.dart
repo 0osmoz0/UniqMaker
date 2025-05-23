@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:uniqmaker/ProfilePage.dart';
+import 'package:uniqmaker/freelancerdb.dart';
 
 class FreelancerStatsPage extends StatelessWidget {
   const FreelancerStatsPage({super.key});
@@ -32,7 +33,7 @@ class FreelancerStatsPage extends StatelessWidget {
       padding: const EdgeInsets.only(right: 16.0),
       child: GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage()));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => ProfilePage()));
       },
       child: const CircleAvatar(
         radius: 20,

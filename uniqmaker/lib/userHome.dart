@@ -61,112 +61,105 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHomeContent() {
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 80),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {},
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        title: const Text(
+          "Accueil",
+          style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 80),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.orange[100],
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundImage: AssetImage('assets/profile.jpg'),
-                  ),
-                ],
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Votre slogan ici",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.deepOrange,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.deepOrange,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Votre slogan ici",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepOrange,
                         ),
                       ),
-                      child: const Text("Voir le catalogue"),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      const Text(
+                        "Lorem ipsum dolor sit amet, consectetur adipiscing elit...",
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.deepOrange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text("Voir le catalogue"),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text("Catégories", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 8),
-
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  return CategoryCard(
-                    name: categories[index]['name']!,
-                    imagePath: categories[index]['image']!,
-                  );
-                },
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text("Catégories", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ),
-            ),
+              const SizedBox(height: 8),
 
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: Text("Promotion d’aujourd’hui", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            ),
-
-            SizedBox(
-              height: 180,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: promotions.length,
-                itemBuilder: (context, index) {
-                  return PromoCard(
-                    discount: promotions[index]['discount']!,
-                    imagePath: promotions[index]['image']!,
-                  );
-                },
+              SizedBox(
+                height: 140,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    return CategoryCard(
+                      name: categories[index]['name']!,
+                      imagePath: categories[index]['image']!,
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+                child: Text("Promotion d’aujourd’hui", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              ),
+
+              SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: promotions.length,
+                  itemBuilder: (context, index) {
+                    return PromoCard(
+                      discount: promotions[index]['discount']!,
+                      imagePath: promotions[index]['image']!,
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

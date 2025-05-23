@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uniqmaker/freelancer.dart';
-import 'package:uniqmaker/user_side.dart';
+import 'package:uniqmaker/userHome.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,12 +16,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (selectedRole == 'User') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const UserScreen()),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } else if (selectedRole == 'Freelancer') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const FreelancerScreen()),
+        MaterialPageRoute(builder: (context) => const FreelancerSignupPage()),
       );
     } else {
       // Optionnel: afficher un message si aucun choix n'est fait

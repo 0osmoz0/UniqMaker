@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uniqmaker/signup.dart';
+import 'package:uniqmaker/login.dart';
 
 class UltimateSplashScreen extends StatefulWidget {
   const UltimateSplashScreen({super.key});
@@ -150,7 +151,12 @@ class _UltimateSplashScreenState extends State<UltimateSplashScreen>
                         children: [
                           _BorderedTextButton(
                             text: 'Connexion',
-                            onPressed: () => _navigateTo('/login'),
+                            onPressed: () => Navigator.push(
+                              context, 
+                              MaterialPageRoute(
+                                builder: (context) => const FreelancerLoginPage(),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
                           _BorderedTextButton(
@@ -175,9 +181,7 @@ class _UltimateSplashScreenState extends State<UltimateSplashScreen>
     );
   }
 
-  void _navigateTo(String route) {
-    Navigator.pushNamed(context, route);
-  }
+
 }
 
 class _BorderedTextButton extends StatelessWidget {

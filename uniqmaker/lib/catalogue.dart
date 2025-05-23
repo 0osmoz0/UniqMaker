@@ -9,7 +9,7 @@ class CataloguePage extends StatelessWidget {
   ];
 
   final List<Map<String, String>> bestSellers = [
-    {"name": "T-shirt Bio", "image": "assets/textile.png", "price": "12€"},
+    {"name": "T-shirt Bio", "image": "assets/textile_white.png", "price": "12€"},
     {"name": "Gourde Inox", "image": "assets/mug.png", "price": "15€"},
     {"name": "Carnet A5", "image": "assets/carnet.png", "price": "6€"},
   ];
@@ -239,8 +239,8 @@ class CategoryProductsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final Map<String, List<Map<String, String>>> categoryProducts = {
       "Textile": [
-        {"name": "T-shirt Bio", "image": "assets/textile.png", "price": "12€"},
-        {"name": "Sweat Uni", "image": "assets/textile.png", "price": "25€"},
+        {"name": "T-shirt Bio", "image": "assets/textile_white.png", "price": "12€"},
+        {"name": "Sweat Uni", "image": "assets/textile_white.png", "price": "25€"},
       ],
       "Bureau": [
         {"name": "Carnet A5", "image": "assets/carnet.png", "price": "6€"},
@@ -369,137 +369,324 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   int _quantity = 1;
   Color? _selectedColor;
   String? _uploadedLogoPath;
+  Offset _logoPosition = Offset(150, 200);
+  Offset _textPosition = Offset(100, 300);
+  bool _isFavorite = false;
+  String _customText = '';
+  final TextEditingController _textController = TextEditingController();
+
+  final List<Color> _availableColors = [
+    Colors.black,
+    Colors.white,
+    const Color(0xFFE30613),
+    const Color(0xFFFFD800),
+    const Color(0xFF007A30),
+    const Color(0xFF0038A8),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.name),
-        backgroundColor: Colors.transparent,
+        title: Text(widget.name, style: const TextStyle(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: _isFavorite ? Colors.red : Colors.black,
+            ),
+            onPressed: () => setState(() => _isFavorite = !_isFavorite),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Image.asset(
-                widget.imagePath,
-                height: 200,
-                fit: BoxFit.cover,
+            GestureDetector(
+              onTap: () => _showVisualization(context),
+              child: Container(
+                height: 400,
+                width: double.infinity,
+                color: Colors.grey[200],
+                child: Stack(
+                  children: [
+                    Center(
+                      child: ColorFiltered(
+                        colorFilter: _selectedColor != null
+                            ? ColorFilter.mode(_selectedColor!, BlendMode.srcATop)
+                            : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+                        child: Image.asset(
+                          widget.imagePath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                    if (_uploadedLogoPath != null)
+                      Positioned(
+                        left: _logoPosition.dx,
+                        top: _logoPosition.dy,
+                        child: GestureDetector(
+                          onPanUpdate: (details) {
+                            setState(() {
+                              _logoPosition += details.delta;
+                            });
+                          },
+                          child: Image.file(
+                            File(_uploadedLogoPath!),
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    if (_customText.isNotEmpty)
+                      Positioned(
+                        left: _textPosition.dx,
+                        top: _textPosition.dy,
+                        child: GestureDetector(
+                          onPanUpdate: (details) {
+                            setState(() {
+                              _textPosition += details.delta;
+                            });
+                          },
+                          child: Text(
+                            _customText,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 20),
+            _buildColorSelector(),
             const SizedBox(height: 16),
-            Text(
-              widget.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Prix: ${widget.price}",
-              style: const TextStyle(fontSize: 20, color: Colors.deepOrange),
-            ),
+            _buildQuantitySelector(),
             const SizedBox(height: 16),
-            Text("Quantité:", style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.remove),
-                  onPressed: () {
-                    if (_quantity > 1) {
-                      setState(() => _quantity--);
-                    }
-                  },
-                ),
-                Text("$_quantity", style: const TextStyle(fontSize: 18)),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => setState(() => _quantity++),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: ElevatedButton(
-                onPressed: _showCustomizationSheet,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                ),
-                child: const Text("Personnaliser"),
-              ),
-            ),
-            if (_selectedColor != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Text("Couleur sélectionnée", style: TextStyle(color: _selectedColor)),
-              ),
-            if (_uploadedLogoPath != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Image.file(File(_uploadedLogoPath!), height: 80),
-              ),
+            _buildLogoUpload(),
+            const SizedBox(height: 16),
+            _buildTextEditor(),
+            const SizedBox(height: 16),
+            _buildVisualizationButton(),
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
-  void _showCustomizationSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Widget _buildColorSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Couleur du t-shirt:", style: TextStyle(fontSize: 18)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          children: _availableColors.map((color) {
+            return GestureDetector(
+              onTap: () => setState(() => _selectedColor = color),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _selectedColor == color ? Colors.black : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuantitySelector() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Quantité:", style: TextStyle(fontSize: 18)),
+        const SizedBox(width: 10),
+        IconButton(
+          icon: const Icon(Icons.remove),
+          onPressed: () => setState(() {
+            if (_quantity > 1) _quantity--;
+          }),
+        ),
+        Text('$_quantity', style: const TextStyle(fontSize: 18)),
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => setState(() => _quantity++),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogoUpload() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Logo personnalisé:", style: TextStyle(fontSize: 18)),
+        const SizedBox(height: 8),
+        _uploadedLogoPath != null
+            ? Row(
+                children: [
+                  Image.file(File(_uploadedLogoPath!), width: 80, height: 80),
+                  const SizedBox(width: 10),
+                  TextButton(
+                    onPressed: _uploadLogo,
+                    child: const Text("Changer"),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() => _uploadedLogoPath = null),
+                    child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              )
+            : ElevatedButton.icon(
+                onPressed: _uploadLogo,
+                icon: const Icon(Icons.upload),
+                label: const Text("Ajouter un logo"),
+              ),
+      ],
+    );
+  }
+
+  Widget _buildTextEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Texte personnalisé:", style: TextStyle(fontSize: 18)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _textController,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'Votre texte ici...',
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: () => setState(() {
+                _customText = _textController.text;
+              }),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVisualizationButton() {
+    return ElevatedButton(
+      onPressed: () => _showVisualization(context),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Choisir une couleur:", style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              children: [Colors.red, Colors.green, Colors.blue, Colors.orange, Colors.black]
-                  .map((color) => GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedColor = color);
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _selectedColor == color ? Colors.black : Colors.transparent,
-                              width: 2,
+      child: const Text("Visualiser le produit", style: TextStyle(fontSize: 16)),
+    );
+  }
+
+  Future<void> _uploadLogo() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _uploadedLogoPath = image.path;
+      });
+    }
+  }
+
+  void _showVisualization(BuildContext context) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Visualisation')),
+        body: StatefulBuilder(
+          builder: (context, setModalState) {
+            Offset logoPos = _logoPosition;
+            Offset textPos = _textPosition;
+
+            return Stack(
+              children: [
+                Container(
+                  color: _selectedColor ?? Colors.grey[200],
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: ColorFiltered(
+                          colorFilter: _selectedColor != null
+                              ? ColorFilter.mode(_selectedColor!, BlendMode.srcATop)
+                              : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
+                          child: Image.asset(widget.imagePath, fit: BoxFit.contain),
+                        ),
+                      ),
+
+                      if (_uploadedLogoPath != null)
+                        Positioned(
+                          left: logoPos.dx,
+                          top: logoPos.dy,
+                          child: GestureDetector(
+                            onPanUpdate: (details) {
+                              setModalState(() => logoPos += details.delta);
+                              setState(() => _logoPosition = logoPos);
+                            },
+                            child: Image.file(
+                              File(_uploadedLogoPath!),
+                              width: 100,
+                              height: 100,
                             ),
                           ),
                         ),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () async {
-                final picker = ImagePicker();
-                final picked = await picker.pickImage(source: ImageSource.gallery);
-                if (picked != null) {
-                  setState(() => _uploadedLogoPath = picked.path);
-                  Navigator.pop(context);
-                }
-              },
-              icon: const Icon(Icons.image),
-              label: const Text("Téléverser un logo"),
-            ),
-          ],
+
+                      if (_customText.isNotEmpty)
+                        Positioned(
+                          left: textPos.dx,
+                          top: textPos.dy,
+                          child: GestureDetector(
+                            onPanUpdate: (details) {
+                              setModalState(() => textPos += details.delta);
+                              setState(() => _textPosition = textPos);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _customText,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
-    );
-  }
-} 
+    ),
+  );
+}
+}

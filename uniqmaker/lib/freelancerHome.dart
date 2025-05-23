@@ -31,7 +31,7 @@ class _HomePageState extends State<HomePage> {
 
   final List<Map<String, String>> categories = [
     {"name": "Sac", "image": "assets/sac.png"},
-    {"name": "Textile", "image": "assets/textile.png"},
+    {"name": "Textile", "image": "assets/textile_white.png"},
     {"name": "Tote", "image": "assets/tote.png"},
     {"name": "Carnet", "image": "assets/carnet.png"},
     {"name": "Mug", "image": "assets/mug.png"},
@@ -43,7 +43,7 @@ class _HomePageState extends State<HomePage> {
     {"discount": "20%", "image": "assets/tote.png"},
     {"discount": "30%", "image": "assets/mug.png"},
     {"discount": "10%", "image": "assets/stylo.png"},
-    {"discount": "50%", "image": "assets/textile.png"},
+    {"discount": "50%", "image": "assets/textile_white.png"},
   ];
 
   void _onNavBarTapped(int index) {
