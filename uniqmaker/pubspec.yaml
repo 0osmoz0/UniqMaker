@@ -29,7 +29,6 @@ dependencies:
   flutter_svg: ^2.0.9
   flutter_colorpicker: ^1.0.3
   mailer: ^6.0.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
