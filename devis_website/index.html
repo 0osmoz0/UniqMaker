@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation de devis - [Votre Entreprise]</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Devis #<span id="devis-num"></span></h1>
+            <p class="date" id="devis-date"></p>
+        </header>
+
+        <div class="devis-details">
+            <h2>Détails du devis</h2>
+            <div id="devis-content" class="devis-content">
+                <!-- Contenu dynamique injecté depuis l'URL -->
+            </div>
+
+            <div class="total">
+                <h3>Total: <span id="devis-total"></span> €</h3>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="accept-btn" class="btn accept">Accepter le devis</button>
+            <button id="refuse-btn" class="btn refuse">Refuser</button>
+        </div>
+
+        <div id="payment-form" class="payment-form hidden">
+            <h2>Paiement sécurisé</h2>
+            <form id="payment">
+                <input type="text" placeholder="Nom complet" required>
+                <input type="email" placeholder="Email" required>
+                <div id="card-element" class="card-element"></div>
+                <button type="submit" class="btn pay">Payer maintenant</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

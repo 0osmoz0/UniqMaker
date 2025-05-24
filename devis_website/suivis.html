@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Suivi de commande</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Suivi de votre commande</h1>
+            <p>Numéro: <span id="order-num"></span></p>
+        </header>
+
+        <div class="timeline">
+            <div class="step active">
+                <div class="step-circle">1</div>
+                <p>Devis accepté</p>
+                <p class="step-date" id="step1-date"></p>
+            </div>
+            
+            <div class="step" id="step2">
+                <div class="step-circle">2</div>
+                <p>Paiement confirmé</p>
+                <p class="step-date" id="step2-date"></p>
+            </div>
+            
+            <div class="step" id="step3">
+                <div class="step-circle">3</div>
+                <p>En production</p>
+                <p class="step-date" id="step3-date"></p>
+            </div>
+            
+            <div class="step" id="step4">
+                <div class="step-circle">4</div>
+                <p>Expédié</p>
+                <p class="step-date" id="step4-date"></p>
+            </div>
+        </div>
+
+        <div class="contact">
+            <h2>Questions ?</h2>
+            <p>Contactez-nous à <a href="mailto:contact@votreentreprise.com">contact@votreentreprise.com</a></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
