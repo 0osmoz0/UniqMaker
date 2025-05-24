@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:math';
 import 'package:image_picker/image_picker.dart';
 import 'package:uniqmaker/ProfilePage.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server.dart';
 
 class CataloguePage extends StatelessWidget {
   final List<String> categories = [
@@ -141,7 +146,7 @@ class CompactProductCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(name: name, imagePath: imagePath, price: price),
+            builder: (context) => ProductDetailPage(name: name, imagePath: imagePath, price: double.parse(price.replaceAll('€', '').trim()), productType: "defaultType"),
           ),
         );
       },
@@ -195,7 +200,7 @@ class SuggestionTile extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(name: name, imagePath: imagePath, price: price),
+            builder: (context) => ProductDetailPage(name: name, imagePath: imagePath, price: double.parse(price.replaceAll('€', '').trim()), productType: "defaultType"),
           ),
         );
       },
@@ -291,7 +296,8 @@ class CategoryProductsPage extends StatelessWidget {
                         builder: (context) => ProductDetailPage(
                           name: product["name"]!,
                           imagePath: product["image"]!,
-                          price: product["price"]!,
+                          price: double.parse(product["price"]!.replaceAll('€', '').trim()),
+                          productType: categoryName.toLowerCase(), // Assuming categoryName represents the product type
                         ),
                       ),
                     );
@@ -352,13 +358,15 @@ class ProductCard extends StatelessWidget {
 class ProductDetailPage extends StatefulWidget {
   final String name;
   final String imagePath;
-  final String price;
+  final double price;
+  final String productType;
 
   const ProductDetailPage({
     Key? key,
     required this.name,
     required this.imagePath,
     required this.price,
+    required this.productType,
   }) : super(key: key);
 
   @override
@@ -366,15 +374,29 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
+  // Variables de personnalisation
   int _quantity = 1;
-  Color? _selectedColor;
-  String? _uploadedLogoPath;
-  Offset _logoPosition = Offset(150, 200);
-  Offset _textPosition = Offset(100, 300);
-  bool _isFavorite = false;
+  Color _productColor = Colors.white;
+  File? _customLogo;
   String _customText = '';
+  bool _isFavorite = false;
+  Offset _logoPosition = Offset.zero;
+  Offset _textPosition = Offset.zero;
+  double _logoScale = 1.0;
+  double _textScale = 1.0;
+  double _logoRotation = 0;
+  double _textRotation = 0;
+  String? _selectedElement;
+  Color _textColor = Colors.black;
+  String _selectedFont = 'Roboto';
+  String _selectedPosition = 'Poche poitrine';
   final TextEditingController _textController = TextEditingController();
 
+  // Variables pour le formulaire email
+  final _clientEmailController = TextEditingController();
+  final _clientNameController = TextEditingController();
+
+  // Options disponibles
   final List<Color> _availableColors = [
     Colors.black,
     Colors.white,
@@ -382,153 +404,474 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     const Color(0xFFFFD800),
     const Color(0xFF007A30),
     const Color(0xFF0038A8),
+    const Color(0xFF6D3B8E),
+    const Color(0xFFFF6B00),
   ];
+
+  final List<String> _availableFonts = [
+    'Roboto',
+    'Arial',
+    'Times New Roman',
+    'Courier New',
+    'Comic Sans MS'
+  ];
+
+  List<String> _availablePositions = [
+    'Poche poitrine',
+    'Centré poitrine',
+    'Dos haut',
+    'Dos bas',
+    'Manche gauche',
+    'Manche droite',
+    'Style bas'
+  ];
+
+  final Size _productSize = Size(300, 400);
+
+  @override
+  void initState() {
+    super.initState();
+    _initializePositions();
+    _adaptPositionsForProductType();
+  }
+
+  void _initializePositions() {
+    _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+    _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
+  }
+
+  void _adaptPositionsForProductType() {
+    setState(() {
+      switch (widget.productType.toLowerCase()) {
+        case 'casquette':
+          _availablePositions = ['Avant', 'Côté droit', 'Côté gauche', 'Arrière'];
+          _selectedPosition = 'Avant';
+          break;
+        case 'sweat':
+          _availablePositions.add('Poche kangourou');
+          break;
+      }
+      _applySmartPositioning();
+    });
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _clientEmailController.dispose();
+    _clientNameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.name, style: const TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        title: Text(widget.name),
         actions: [
           IconButton(
-            icon: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: _isFavorite ? Colors.red : Colors.black,
-            ),
+            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border),
+            color: _isFavorite ? Colors.red : null,
             onPressed: () => setState(() => _isFavorite = !_isFavorite),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            GestureDetector(
-              onTap: () => _showVisualization(context),
-              child: Container(
-                height: 400,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: Stack(
-                  children: [
-                    Center(
-                      child: ColorFiltered(
-                        colorFilter: _selectedColor != null
-                            ? ColorFilter.mode(_selectedColor!, BlendMode.srcATop)
-                            : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
-                        child: Image.asset(
-                          widget.imagePath,
-                          fit: BoxFit.contain,
-                        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onScaleStart: _handleScaleStart,
+              onScaleUpdate: _handleScaleUpdate,
+              onTapUp: _handleTapUp,
+              child: Stack(
+                children: [
+                  Center(
+                    child: ColorFiltered(
+                      colorFilter: ColorFilter.mode(_productColor, BlendMode.srcATop),
+                      child: Image.asset(
+                        widget.imagePath,
+                        fit: BoxFit.contain,
+                        width: _productSize.width,
+                        height: _productSize.height,
                       ),
                     ),
-                    if (_uploadedLogoPath != null)
-                      Positioned(
-                        left: _logoPosition.dx,
-                        top: _logoPosition.dy,
-                        child: GestureDetector(
-                          onPanUpdate: (details) {
-                            setState(() {
-                              _logoPosition += details.delta;
-                            });
-                          },
-                          child: Image.file(
-                            File(_uploadedLogoPath!),
+                  ),
+                  if (_customLogo != null)
+                    Positioned(
+                      left: _logoPosition.dx,
+                      top: _logoPosition.dy,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedElement = 'logo'),
+                        child: Transform(
+                          transform: Matrix4.identity()
+                            ..translate(-50 * _logoScale, -50 * _logoScale)
+                            ..scale(_logoScale)
+                            ..rotateZ(_logoRotation),
+                          child: Container(
                             width: 100,
                             height: 100,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    if (_customText.isNotEmpty)
-                      Positioned(
-                        left: _textPosition.dx,
-                        top: _textPosition.dy,
-                        child: GestureDetector(
-                          onPanUpdate: (details) {
-                            setState(() {
-                              _textPosition += details.delta;
-                            });
-                          },
-                          child: Text(
-                            _customText,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                            decoration: BoxDecoration(
+                              border: _selectedElement == 'logo'
+                                  ? Border.all(color: Colors.blue, width: 2)
+                                  : null,
+                            ),
+                            child: Image.file(
+                              _customLogo!,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                  if (_customText.isNotEmpty)
+                    Positioned(
+                      left: _textPosition.dx,
+                      top: _textPosition.dy,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedElement = 'text'),
+                        child: Transform(
+                          transform: Matrix4.identity()
+                            ..translate(-_getTextWidth() / 2, -24 * _textScale / 2)
+                            ..scale(_textScale)
+                            ..rotateZ(_textRotation),
+                          child: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.7),
+                              border: _selectedElement == 'text'
+                                  ? Border.all(color: Colors.red, width: 2)
+                                  : null,
+                            ),
+                            child: Text(
+                              _customText,
+                              style: TextStyle(
+                                fontFamily: _selectedFont,
+                                fontSize: 24,
+                                color: _textColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            _buildColorSelector(),
-            const SizedBox(height: 16),
-            _buildQuantitySelector(),
-            const SizedBox(height: 16),
-            _buildLogoUpload(),
-            const SizedBox(height: 16),
-            _buildTextEditor(),
-            const SizedBox(height: 16),
-            _buildVisualizationButton(),
-            const SizedBox(height: 30),
-          ],
-        ),
+          ),
+          Container(
+            height: 300,
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 10,
+                  offset: Offset(0, -5),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildPositionSelector(),
+                  SizedBox(height: 12),
+                  if (_selectedElement != null) _buildElementControls(),
+                  SizedBox(height: 12),
+                  _buildTextCustomization(),
+                  SizedBox(height: 12),
+                  _buildLogoUpload(),
+                  SizedBox(height: 12),
+                  _buildColorSelector(),
+                  SizedBox(height: 12),
+                  _buildBottomControls(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildColorSelector() {
+  double _getTextWidth() {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: _customText,
+        style: TextStyle(
+          fontFamily: _selectedFont,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return textPainter.width;
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    final touchPosition = details.localPosition;
+    setState(() {
+      if (_customLogo != null && _isPointInsideLogo(touchPosition)) {
+        _selectedElement = 'logo';
+      } else if (_customText.isNotEmpty && _isPointInsideText(touchPosition)) {
+        _selectedElement = 'text';
+      } else {
+        _selectedElement = null;
+      }
+    });
+  }
+
+  void _handleScaleStart(ScaleStartDetails details) {
+    final touchPosition = details.localFocalPoint;
+    setState(() {
+      if (_customLogo != null && _isPointInsideLogo(touchPosition)) {
+        _selectedElement = 'logo';
+      } else if (_customText.isNotEmpty && _isPointInsideText(touchPosition)) {
+        _selectedElement = 'text';
+      } else {
+        _selectedElement = null;
+      }
+    });
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    setState(() {
+      if (_selectedElement == 'logo') {
+        _logoPosition += details.focalPointDelta;
+        _logoScale *= details.scale;
+        _logoRotation += details.rotation;
+      } else if (_selectedElement == 'text') {
+        _textPosition += details.focalPointDelta;
+        _textScale *= details.scale;
+        _textRotation += details.rotation;
+      }
+    });
+  }
+
+  bool _isPointInsideLogo(Offset point) {
+    final logoRect = Rect.fromCenter(
+      center: _logoPosition,
+      width: 100 * _logoScale,
+      height: 100 * _logoScale,
+    );
+    return logoRect.contains(point);
+  }
+
+  bool _isPointInsideText(Offset point) {
+    final textWidth = _getTextWidth() * _textScale;
+    final textHeight = 24 * _textScale;
+    final textRect = Rect.fromCenter(
+      center: _textPosition,
+      width: textWidth,
+      height: textHeight,
+    );
+    return textRect.contains(point);
+  }
+
+  Widget _buildPositionSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Couleur du t-shirt:", style: TextStyle(fontSize: 18)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 10,
-          children: _availableColors.map((color) {
-            return GestureDetector(
-              onTap: () => setState(() => _selectedColor = color),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _selectedColor == color ? Colors.black : Colors.transparent,
-                    width: 2,
-                  ),
+        Text(
+          'Position du design',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _availablePositions.map((position) {
+              return Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(position),
+                  selected: _selectedPosition == position,
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedPosition = position;
+                      _applySmartPositioning();
+                    });
+                  },
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildQuantitySelector() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  void _applySmartPositioning() {
+    setState(() {
+      switch (_selectedPosition) {
+        case 'Poche poitrine':
+          _logoPosition = Offset(_productSize.width * 0.3, _productSize.height * 0.3);
+          _textPosition = Offset(_productSize.width * 0.3, _productSize.height * 0.4);
+          break;
+        case 'Centré poitrine':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.3);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+          break;
+        case 'Dos haut':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.1);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.2);
+          break;
+        case 'Dos bas':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.7);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.8);
+          break;
+        case 'Manche gauche':
+          _logoPosition = Offset(_productSize.width * 0.1, _productSize.height * 0.5);
+          _textPosition = Offset(_productSize.width * 0.1, _productSize.height * 0.6);
+          break;
+        case 'Manche droite':
+          _logoPosition = Offset(_productSize.width * 0.9, _productSize.height * 0.5);
+          _textPosition = Offset(_productSize.width * 0.9, _productSize.height * 0.6);
+          break;
+        case 'Poche kangourou':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.7);
+          break;
+        case 'Avant':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.5);
+          break;
+        default:
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
+      }
+      
+      _logoScale = 1.0;
+      _textScale = 1.0;
+      _logoRotation = 0;
+      _textRotation = 0;
+    });
+  }
+
+  Widget _buildElementControls() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Quantité:", style: TextStyle(fontSize: 18)),
-        const SizedBox(width: 10),
-        IconButton(
-          icon: const Icon(Icons.remove),
-          onPressed: () => setState(() {
-            if (_quantity > 1) _quantity--;
-          }),
+        Text(
+          'Contrôles ${_selectedElement == 'logo' ? 'du logo' : 'du texte'}',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        Text('$_quantity', style: const TextStyle(fontSize: 18)),
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () => setState(() => _quantity++),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Rotation'),
+                  Slider(
+                    value: _selectedElement == 'logo' ? _logoRotation : _textRotation,
+                    min: -pi,
+                    max: pi,
+                    onChanged: (value) {
+                      setState(() {
+                        if (_selectedElement == 'logo') {
+                          _logoRotation = value;
+                        } else {
+                          _textRotation = value;
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Taille'),
+                  Slider(
+                    value: _selectedElement == 'logo' ? _logoScale : _textScale,
+                    min: 0.5,
+                    max: 2.0,
+                    onChanged: (value) {
+                      setState(() {
+                        if (_selectedElement == 'logo') {
+                          _logoScale = value;
+                        } else {
+                          _textScale = value;
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextCustomization() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Personnalisation du texte',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: 8),
+        TextField(
+          controller: _textController,
+          decoration: InputDecoration(
+            labelText: 'Entrez votre texte',
+            border: OutlineInputBorder(),
+            suffixIcon: IconButton(
+              icon: Icon(Icons.check),
+              onPressed: () {
+                setState(() => _customText = _textController.text);
+                FocusScope.of(context).unfocus();
+              },
+            ),
+          ),
+          onSubmitted: (value) {
+            setState(() => _customText = value);
+          },
+        ),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            Text('Police: '),
+            Expanded(
+              child: DropdownButton<String>(
+                value: _selectedFont,
+                isExpanded: true,
+                items: _availableFonts.map((font) {
+                  return DropdownMenuItem(
+                    value: font,
+                    child: Text(
+                      font,
+                      style: TextStyle(fontFamily: font),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedFont = value!),
+              ),
+            ),
+            SizedBox(width: 16),
+            GestureDetector(
+              onTap: () => _showColorPicker(false),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: _textColor,
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -538,155 +881,352 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Logo personnalisé:", style: TextStyle(fontSize: 18)),
-        const SizedBox(height: 8),
-        _uploadedLogoPath != null
+        Text(
+          'Logo personnalisé',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: 8),
+        _customLogo != null
             ? Row(
                 children: [
-                  Image.file(File(_uploadedLogoPath!), width: 80, height: 80),
-                  const SizedBox(width: 10),
-                  TextButton(
-                    onPressed: _uploadLogo,
-                    child: const Text("Changer"),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child: Image.file(_customLogo!, fit: BoxFit.contain),
                   ),
-                  TextButton(
-                    onPressed: () => setState(() => _uploadedLogoPath = null),
-                    child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+                  SizedBox(width: 16),
+                  Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _uploadLogo,
+                        child: Text('Changer'),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(150, 36),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _customLogo = null;
+                          _selectedElement = null;
+                        }),
+                        child: Text(
+                          'Supprimer',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               )
             : ElevatedButton.icon(
                 onPressed: _uploadLogo,
-                icon: const Icon(Icons.upload),
-                label: const Text("Ajouter un logo"),
+                icon: Icon(Icons.upload),
+                label: Text('Ajouter un logo'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 48),
+                ),
               ),
       ],
     );
   }
 
-  Widget _buildTextEditor() {
+  Widget _buildColorSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Texte personnalisé:", style: TextStyle(fontSize: 18)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _textController,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Votre texte ici...',
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: () => setState(() {
-                _customText = _textController.text;
-              }),
+        Text(
+          'Couleur du produit',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: _availableColors.map((color) {
+            return GestureDetector(
+              onTap: () => setState(() => _productColor = color),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _productColor == color ? Colors.black : Colors.grey,
+                    width: _productColor == color ? 3 : 1,
+                  ),
+                ),
+                child: _productColor == color
+                    ? Icon(Icons.check, color: _getContrastColor(color))
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Color _getContrastColor(Color color) {
+    final luminance = (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+
+  Widget _buildBottomControls() {
+    final totalPrice = widget.price * _quantity;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.remove),
+                    onPressed: () {
+                      if (_quantity > 1) setState(() => _quantity--);
+                    },
+                  ),
+                  Text('$_quantity'),
+                  IconButton(
+                    icon: Icon(Icons.add),
+                    onPressed: () => setState(() => _quantity++),
+                  ),
+                  Spacer(),
+                  Text(
+                    'Total: ${totalPrice.toStringAsFixed(2)} €',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
+              ),
             ),
+            SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _saveCustomization,
+              child: Text('Valider'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        ElevatedButton.icon(
+          onPressed: _showEmailDialog,
+          icon: Icon(Icons.email),
+          label: Text('Envoyer un devis par email'),
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(double.infinity, 48),
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildVisualizationButton() {
-    return ElevatedButton(
-      onPressed: () => _showVisualization(context),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+  void _showEmailDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Envoyer le devis'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _clientNameController,
+                decoration: InputDecoration(
+                  labelText: 'Nom du client',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: _clientEmailController,
+                decoration: InputDecoration(
+                  labelText: 'Email du client',
+                  border: OutlineInputBorder(),
+                  hintText: 'exemple@domaine.com',
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              SizedBox(height: 20),
+              Text('Récapitulatif du devis:', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              _buildQuoteSummary(),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: _openGmail,
+            child: Text('Ouvrir Gmail'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
       ),
-      child: const Text("Visualiser le produit", style: TextStyle(fontSize: 16)),
+    );
+  }
+
+  Future<void> _openGmail() async {
+    final email = _clientEmailController.text;
+    final subject = 'Devis pour ${widget.name}';
+    final body = _generateEmailBody();
+
+    final Uri uri = Uri(
+      scheme: 'mailto',
+      path: email,
+      queryParameters: {
+        'subject': subject,
+        'body': body,
+      },
+    );
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossible d\'ouvrir Gmail')),
+      );
+    }
+  }
+
+  String _generateEmailBody() {
+    return '''
+Bonjour ${_clientNameController.text.isNotEmpty ? _clientNameController.text : 'Monsieur/Madame'},
+
+Voici le récapitulatif de votre devis :
+
+**Produit:** ${widget.name}
+**Type:** ${widget.productType}
+**Quantité:** $_quantity
+**Prix unitaire:** ${widget.price.toStringAsFixed(2)} €
+**Prix total:** ${(widget.price * _quantity).toStringAsFixed(2)} €
+
+**Personnalisation:**
+- Couleur: ${_getColorName(_productColor)}
+${_customText.isNotEmpty ? '- Texte personnalisé: $_customText\n' : ''}
+${_customText.isNotEmpty ? '- Police: $_selectedFont\n' : ''}
+${_customText.isNotEmpty ? '- Couleur du texte: ${_getColorName(_textColor)}\n' : ''}
+- Logo personnalisé: ${_customLogo != null ? 'Oui' : 'Non'}
+- Position: $_selectedPosition
+
+Ce devis est valable 30 jours à compter d'aujourd'hui.
+
+Cordialement,
+[Votre nom]
+[Votre entreprise]
+[Vos coordonnées]
+''';
+  }
+
+  String _getColorName(Color color) {
+    if (color == Colors.black) return 'Noir';
+    if (color == Colors.white) return 'Blanc';
+    if (color == const Color(0xFFE30613)) return 'Rouge';
+    if (color == const Color(0xFFFFD800)) return 'Jaune';
+    if (color == const Color(0xFF007A30)) return 'Vert';
+    if (color == const Color(0xFF0038A8)) return 'Bleu';
+    if (color == const Color(0xFF6D3B8E)) return 'Violet';
+    if (color == const Color(0xFFFF6B00)) return 'Orange';
+    return 'Couleur personnalisée';
+  }
+
+  Widget _buildQuoteSummary() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildQuoteItem('Produit', widget.name),
+        _buildQuoteItem('Type', widget.productType),
+        _buildQuoteItem('Quantité', '$_quantity'),
+        _buildQuoteItem('Prix unitaire', '${widget.price.toStringAsFixed(2)} €'),
+        _buildQuoteItem('Prix total', '${(widget.price * _quantity).toStringAsFixed(2)} €'),
+        Divider(),
+        _buildQuoteItem('Couleur', _getColorName(_productColor)),
+        if (_customText.isNotEmpty) _buildQuoteItem('Texte', _customText),
+        if (_customText.isNotEmpty) _buildQuoteItem('Police', _selectedFont),
+        if (_customText.isNotEmpty) _buildQuoteItem('Couleur texte', _getColorName(_textColor)),
+        _buildQuoteItem('Logo', _customLogo != null ? 'Oui' : 'Non'),
+        _buildQuoteItem('Position', _selectedPosition),
+      ],
+    );
+  }
+
+  Widget _buildQuoteItem(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('$label:', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(value),
+        ],
+      ),
     );
   }
 
   Future<void> _uploadLogo() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
       setState(() {
-        _uploadedLogoPath = image.path;
+        _customLogo = File(pickedFile.path);
+        _selectedElement = 'logo';
       });
     }
   }
 
-  void _showVisualization(BuildContext context) {
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Visualisation')),
-        body: StatefulBuilder(
-          builder: (context, setModalState) {
-            Offset logoPos = _logoPosition;
-            Offset textPos = _textPosition;
-
-            return Stack(
-              children: [
-                Container(
-                  color: _selectedColor ?? Colors.grey[200],
-                  width: double.infinity,
-                  child: Stack(
-                    children: [
-                      Center(
-                        child: ColorFiltered(
-                          colorFilter: _selectedColor != null
-                              ? ColorFilter.mode(_selectedColor!, BlendMode.srcATop)
-                              : const ColorFilter.mode(Colors.transparent, BlendMode.dst),
-                          child: Image.asset(widget.imagePath, fit: BoxFit.contain),
-                        ),
-                      ),
-
-                      if (_uploadedLogoPath != null)
-                        Positioned(
-                          left: logoPos.dx,
-                          top: logoPos.dy,
-                          child: GestureDetector(
-                            onPanUpdate: (details) {
-                              setModalState(() => logoPos += details.delta);
-                              setState(() => _logoPosition = logoPos);
-                            },
-                            child: Image.file(
-                              File(_uploadedLogoPath!),
-                              width: 100,
-                              height: 100,
-                            ),
-                          ),
-                        ),
-
-                      if (_customText.isNotEmpty)
-                        Positioned(
-                          left: textPos.dx,
-                          top: textPos.dy,
-                          child: GestureDetector(
-                            onPanUpdate: (details) {
-                              setModalState(() => textPos += details.delta);
-                              setState(() => _textPosition = textPos);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _customText,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+  void _saveCustomization() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Personnalisation enregistrée'),
+        duration: Duration(seconds: 2),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  void _showColorPicker([bool isProductColor = true]) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isProductColor ? 'Couleur du produit' : 'Couleur du texte'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: isProductColor ? _productColor : _textColor,
+            onColorChanged: (color) {
+              setState(() {
+                if (isProductColor) {
+                  _productColor = color;
+                } else {
+                  _textColor = color;
+                }
+              });
+            },
+            showLabel: true,
+            pickerAreaHeightPercent: 0.8,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 }
