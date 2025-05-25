@@ -34,5 +34,14 @@
     "dateNaissance": "122311",
     "region": "Nouvelle-Aquitaine",
     "profession": "En poste"
+  },
+  {
+    "prenom": "Ronan",
+    "nom": "Lebel",
+    "email": "ronanlebel98@icloud.com",
+    "motDePasse": "rouge",
+    "dateNaissance": "12/11/98",
+    "region": "Île-de-France",
+    "profession": "En poste"
   }
 ]

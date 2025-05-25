@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uniqmaker/ProfilePage.dart';
@@ -964,33 +965,41 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  String _generateEmailBody() {
-    return '''
-DEVIS PERSONNALISÉ
+ String _generateEmailBody() {
+  final devisData = {
+    'numero': 'DEV${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
+    'client': _clientNameController.text,
+    'produit': widget.name,
+    'description': widget.productType,
+    'quantite': _quantity,
+    'prix_unitaire': widget.price.toStringAsFixed(2),
+    'total': (widget.price * _quantity).toStringAsFixed(2),
+    'couleur': _getColorName(_productColor),
+    'texte': _customText,
+    'logo': _customLogo != null,
+    'position': _selectedPosition,
+  };
 
-Client: ${_clientNameController.text.isNotEmpty ? _clientNameController.text : 'Non spécifié'}
+  final jsonData = jsonEncode(devisData);
+  final encodedData = Uri.encodeComponent(jsonData);
+  
+  final link = 'https://votreusername.github.io/devis-website?data=$encodedData';
+  final suiviLink = 'https://votreusername.github.io/devis-website/suivi.html?id=${devisData['numero']}';
 
-DÉTAILS DU PRODUIT:
-- Produit: ${widget.name}
-- Type: ${widget.productType}
-- Quantité: $_quantity
-- Prix unitaire: ${widget.price.toStringAsFixed(2)} €
-- Prix total: ${(widget.price * _quantity).toStringAsFixed(2)} €
+  return '''
+Bonjour ${_clientNameController.text},
 
-PERSONNALISATION:
-- Couleur: ${_getColorName(_productColor)}
-${_customText.isNotEmpty ? '- Texte: $_customText\n' : ''}
-${_customText.isNotEmpty ? '- Police: $_selectedFont\n' : ''}
-${_customText.isNotEmpty ? '- Couleur texte: ${_getColorName(_textColor)}\n' : ''}
-- Logo: ${_customLogo != null ? 'Oui' : 'Non'}
-- Position: $_selectedPosition
+Voici votre devis personnalisé. Pour le valider et procéder au paiement, cliquez sur le lien ci-dessous :
 
-Valable 30 jours à compter du ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}
+👉 ${link}
 
-[Vos coordonnées]
-[Votre logo/signature]
+Après paiement, vous pourrez suivre l'avancement de votre commande ici :
+🔎 ${suiviLink}
+
+Cordialement,
+[Votre Entreprise]
 ''';
-  }
+}
 
   String _getColorName(Color color) {
     if (color == Colors.black) return 'Noir';
