@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart'; // Import path_provider
 import 'dart:math';
 import 'dart:convert';
+import 'dart:ui' as ui; // Importing dart:ui for ui.Image
+import 'package:flutter/rendering.dart'; // Importing for RenderRepaintBoundary
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uniqmaker/ProfilePage.dart';
@@ -321,38 +324,402 @@ class ProductCard extends StatelessWidget {
   final String name;
   final String imagePath;
   final String price;
+  final VoidCallback? onTap;
 
-  const ProductCard({super.key, required this.name, required this.imagePath, required this.price});
+  const ProductCard({super.key, required this.name, required this.imagePath, required this.price, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.shade300, blurRadius: 5, offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.asset(imagePath, height: 120, width: double.infinity, fit: BoxFit.cover),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Text(price, style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w600)),
-              ],
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.grey.shade300, blurRadius: 5, offset: const Offset(0, 3)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Image.asset(imagePath, height: 120, width: double.infinity, fit: BoxFit.cover),
             ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text(price, style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProductListPageV2 extends StatelessWidget {
+  final List<Product> products = [
+    Product(
+      name: 'REGENT 1830',
+      type: 'T-shirt',
+      price: 29.99,
+      imagePath: 'assets/tshirt.png',
+      rating: 4.8,
+      reviewCount: 9,
+    ),
+    Product(
+      name: 'CLASSIC 1950',
+      type: 'Sweat',
+      price: 49.99,
+      imagePath: 'assets/sweat.png',
+      rating: 4.5,
+      reviewCount: 7,
+    ),
+  ];
+
+  ProductListPageV2({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('01 | STUDIO'),
+      ),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return ProductCard(
+            name: products[index].name,
+            imagePath: products[index].imagePath,
+            price: '${products[index].price.toStringAsFixed(2)} €',
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductDetails {
+  final String productName;
+  final String productType;
+  final double productPrice;
+  final String productImagePath;
+  final double productRating;
+  final int productReviewCount;
+
+  ProductDetails({
+    required this.productName,
+    required this.productType,
+    required this.productPrice,
+    required this.productImagePath,
+    this.productRating = 0,
+    this.productReviewCount = 0,
+  });
+}
+
+class DetailedProductCard extends StatelessWidget {
+  final Product product;
+  final VoidCallback onTap;
+
+  const DetailedProductCard({
+    super.key,
+    required this.product,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(8),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                product.imagePath,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                product.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '${product.type} personnalisé pas cher',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  ...List.generate(5, (index) {
+                    return Icon(
+                      index < product.rating.floor()
+                          ? Icons.star
+                          : Icons.star_border,
+                      color: Colors.amber,
+                      size: 16,
+                    );
+                  }),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${product.rating.toStringAsFixed(1)} (${product.reviewCount})',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: onTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 36),
+                ),
+                child: const Text('PERSONNALISER'),
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProductListPageV3 extends StatelessWidget {
+  final List<Product> products = [
+    Product(
+      name: 'REGENT 1830',
+      type: 'T-shirt',
+      price: 29.99,
+      imagePath: 'assets/tshirt.png',
+      rating: 4.8,
+      reviewCount: 9,
+    ),
+    Product(
+      name: 'CLASSIC 1950',
+      type: 'Casquette',
+      price: 24.99,
+      imagePath: 'assets/cap.png',
+      rating: 4.5,
+      reviewCount: 7,
+    ),
+    Product(
+      name: 'PREMIUM 2023',
+      type: 'Sweat',
+      price: 49.99,
+      imagePath: 'assets/sweat.png',
+      rating: 4.7,
+      reviewCount: 12,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('01 | STUDIO'),
+      ),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return ProductCard(
+            name: products[index].name,
+            imagePath: products[index].imagePath,
+            price: '${products[index].price.toStringAsFixed(2)} €',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailPage(
+                    name: products[index].name,
+                    imagePath: products[index].imagePath,
+                    price: products[index].price,
+                    productType: products[index].type,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductV2 {
+  final String nameV2;
+  final String typeV2;
+  final double priceV2;
+  final String imagePathV2;
+  final double ratingV2;
+  final int reviewCountV2;
+
+  ProductV2({
+    required this.nameV2,
+    required this.typeV2,
+    required this.priceV2,
+    required this.imagePathV2,
+    this.ratingV2 = 0,
+    this.reviewCountV2 = 0,
+  });
+}
+
+class ProductListPage extends StatelessWidget {
+  final List<Product> products = [
+    Product(
+      name: 'REGENT 1830',
+      type: 'T-shirt',
+      price: 29.99,
+      imagePath: 'assets/tshirt.png',
+      rating: 4.8,
+      reviewCount: 9,
+    ),
+    Product(
+      name: 'CLASSIC 1950',
+      type: 'Sweat',
+      price: 49.99,
+      imagePath: 'assets/sweat.png',
+      rating: 4.5,
+      reviewCount: 7,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('01 | STUDIO'),
+      ),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return ProductCard(
+            name: products[index].name,
+            imagePath: products[index].imagePath,
+            price: '${products[index].price.toStringAsFixed(2)} €',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailPage(
+                    name: products[index].name,
+                    imagePath: products[index].imagePath,
+                    price: products[index].price,
+                    productType: products[index].type,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class Product {
+  final String name;
+  final String type;
+  final double price;
+  final String imagePath;
+  final double rating;
+  final int reviewCount;
+
+  Product({
+    required this.name,
+    required this.type,
+    required this.price,
+    required this.imagePath,
+    this.rating = 0,
+    this.reviewCount = 0,
+  });
+}
+
+class CustomProductCard extends StatelessWidget {
+  final Product product;
+  final VoidCallback onTap;
+
+  const CustomProductCard({
+    Key? key,
+    required this.product,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.all(8),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Image.asset(
+                product.imagePath,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                product.name,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '${product.type} personnalisé pas cher',
+                style: TextStyle(color: Colors.grey),
+              ),
+              SizedBox(height: 4),
+              Row(
+                children: [
+                  ...List.generate(5, (index) {
+                    return Icon(
+                      index < product.rating.floor()
+                          ? Icons.star
+                          : Icons.star_border,
+                      color: Colors.amber,
+                      size: 16,
+                    );
+                  }),
+                  SizedBox(width: 4),
+                  Text(
+                    '${product.rating.toStringAsFixed(1)} (${product.reviewCount})',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: onTap,
+                child: Text('PERSONNALISER'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 36),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -373,11 +740,11 @@ class ProductDetailPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _ProductDetailPageState createState() => _ProductDetailPageState();
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  // Personalization variables
+  // Variables de personnalisation
   int _quantity = 1;
   Color _productColor = Colors.white;
   File? _customLogo;
@@ -394,12 +761,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   String _selectedFont = 'Roboto';
   String _selectedPosition = 'Poche poitrine';
   final TextEditingController _textController = TextEditingController();
+  final GlobalKey _productPreviewKey = GlobalKey();
 
-  // Email form variables
-  final _clientEmailController = TextEditingController();
+  // Contrôleurs pour les informations client
   final _clientNameController = TextEditingController();
+  final _clientEmailController = TextEditingController();
+  final _clientPhoneController = TextEditingController();
+  final _clientAddressController = TextEditingController();
 
-  // Available options
+  // Options disponibles
   final List<Color> _availableColors = [
     Colors.black,
     Colors.white,
@@ -430,6 +800,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   ];
 
   final Size _productSize = Size(300, 400);
+  bool _isSaving = false;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -444,6 +816,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   void _adaptPositionsForProductType() {
+    if (_isDisposed) return;
+    
     setState(() {
       switch (widget.productType.toLowerCase()) {
         case 'casquette':
@@ -451,78 +825,193 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           _selectedPosition = 'Avant';
           break;
         case 'sweat':
-          _availablePositions.add('Poche kangourou');
+          if (!_availablePositions.contains('Poche kangourou')) {
+            _availablePositions.add('Poche kangourou');
+          }
           break;
       }
-      // Add this missing method to your _ProductDetailPageState class
-    void _applySmartPositioning() {
-      setState(() {
-        switch (_selectedPosition) {
-          case 'Poche poitrine':
-            _logoPosition = Offset(_productSize.width * 0.3, _productSize.height * 0.3);
-            _textPosition = Offset(_productSize.width * 0.3, _productSize.height * 0.4);
-            break;
-          case 'Centré poitrine':
-            _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.3);
-            _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
-            break;
-          case 'Dos haut':
-            _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.1);
-            _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.2);
-            break;
-          case 'Dos bas':
-            _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.7);
-            _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.8);
-            break;
-          case 'Manche gauche':
-            _logoPosition = Offset(_productSize.width * 0.1, _productSize.height * 0.5);
-            _textPosition = Offset(_productSize.width * 0.1, _productSize.height * 0.6);
-            break;
-          case 'Manche droite':
-            _logoPosition = Offset(_productSize.width * 0.9, _productSize.height * 0.5);
-            _textPosition = Offset(_productSize.width * 0.9, _productSize.height * 0.6);
-            break;
-          case 'Poche kangourou':
-            _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
-            _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.7);
-            break;
-          case 'Avant':
-            _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
-            _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.5);
-            break;
-          default:
-            _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
-            _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
-        }
-        
-        _logoScale = 1.0;
-        _textScale = 1.0;
-        _logoRotation = 0;
-        _textRotation = 0;
-      });
-    }
       _applySmartPositioning();
+    });
+  }
+
+  void _applySmartPositioning() {
+    if (_isDisposed) return;
+
+    setState(() {
+      switch (_selectedPosition) {
+        case 'Poche poitrine':
+          _logoPosition = Offset(_productSize.width * 0.3, _productSize.height * 0.3);
+          _textPosition = Offset(_productSize.width * 0.3, _productSize.height * 0.4);
+          break;
+        case 'Centré poitrine':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.3);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+          break;
+        case 'Dos haut':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.1);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.2);
+          break;
+        case 'Dos bas':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.7);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.8);
+          break;
+        case 'Manche gauche':
+          _logoPosition = Offset(_productSize.width * 0.1, _productSize.height * 0.5);
+          _textPosition = Offset(_productSize.width * 0.1, _productSize.height * 0.6);
+          break;
+        case 'Manche droite':
+          _logoPosition = Offset(_productSize.width * 0.9, _productSize.height * 0.5);
+          _textPosition = Offset(_productSize.width * 0.9, _productSize.height * 0.6);
+          break;
+        case 'Poche kangourou':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.7);
+          break;
+        case 'Avant':
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.5);
+          break;
+        default:
+          _logoPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.4);
+          _textPosition = Offset(_productSize.width * 0.5, _productSize.height * 0.6);
+      }
+      
+      _logoScale = 1.0;
+      _textScale = 1.0;
+      _logoRotation = 0;
+      _textRotation = 0;
     });
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _textController.dispose();
-    _clientEmailController.dispose();
     _clientNameController.dispose();
+    _clientEmailController.dispose();
+    _clientPhoneController.dispose();
+    _clientAddressController.dispose();
     super.dispose();
   }
 
-  void _handleScaleStart(ScaleStartDetails details) {
-    // Add logic to handle the start of a scaling gesture
+  Future<File?> _captureProductImage() async {
+    if (_isDisposed) return null;
+    
+    try {
+      setState(() => _isSaving = true);
+      
+      final boundary = _productPreviewKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null || !boundary.attached) return null;
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return null;
+
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/custom_product_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(filePath);
+      await file.writeAsBytes(byteData.buffer.asUint8List());
+      
+      return file;
+    } catch (e) {
+      debugPrint('Error capturing image: $e');
+      return null;
+    } finally {
+      if (!_isDisposed) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
-  void _handleScaleUpdate(ScaleUpdateDetails details) {
-    // Add logic to handle updates during a scaling gesture
+  Widget _buildProductPreview() {
+    return RepaintBoundary(
+      key: _productPreviewKey,
+      child: GestureDetector(
+        onScaleStart: _handleScaleStart,
+        onScaleUpdate: _handleScaleUpdate,
+        onTapUp: _handleTapUp,
+        child: Stack(
+          children: [
+            Center(
+              child: ColorFiltered(
+                colorFilter: ColorFilter.mode(_productColor, BlendMode.srcATop),
+                child: Image.asset(
+                  widget.imagePath,
+                  fit: BoxFit.contain,
+                  width: _productSize.width,
+                  height: _productSize.height,
+                ),
+              ),
+            ),
+            if (_customLogo != null)
+              Positioned(
+                left: _logoPosition.dx,
+                top: _logoPosition.dy,
+                child: GestureDetector(
+                  onTap: () => _selectElement('logo'),
+                  child: Transform(
+                    transform: Matrix4.identity()
+                      ..translate(-50 * _logoScale, -50 * _logoScale)
+                      ..scale(_logoScale)
+                      ..rotateZ(_logoRotation),
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        border: _selectedElement == 'logo'
+                            ? Border.all(color: Colors.blue, width: 2)
+                            : null,
+                      ),
+                      child: Image.file(
+                        _customLogo!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (ctx, error, stack) => Icon(Icons.error),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (_customText.isNotEmpty)
+              Positioned(
+                left: _textPosition.dx,
+                top: _textPosition.dy,
+                child: GestureDetector(
+                  onTap: () => _selectElement('text'),
+                  child: Transform(
+                    transform: Matrix4.identity()
+                      ..translate(-_getTextWidth() / 2, -24 * _textScale / 2)
+                      ..scale(_textScale)
+                      ..rotateZ(_textRotation),
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.7),
+                        border: _selectedElement == 'text'
+                            ? Border.all(color: Colors.red, width: 2)
+                            : null,
+                      ),
+                      child: Text(
+                        _customText,
+                        style: TextStyle(
+                          fontFamily: _selectedFont,
+                          fontSize: 24,
+                          color: _textColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
-  void _handleTapUp(TapUpDetails details) {
-    // Add logic to handle a tap gesture
+  void _selectElement(String element) {
+    if (_isDisposed) return;
+    setState(() => _selectedElement = element);
   }
 
   double _getTextWidth() {
@@ -540,466 +1029,434 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return textPainter.width;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.name),
-        actions: [
-          IconButton(
-            icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border),
-            color: _isFavorite ? Colors.red : null,
-            onPressed: () => setState(() => _isFavorite = !_isFavorite),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onScaleStart: _handleScaleStart,
-              onScaleUpdate: _handleScaleUpdate,
-              onTapUp: _handleTapUp,
-              child: Stack(
-                children: [
-                  Center(
-                    child: ColorFiltered(
-                      colorFilter: ColorFilter.mode(_productColor, BlendMode.srcATop),
-                      child: Image.asset(
-                        widget.imagePath,
-                        fit: BoxFit.contain,
-                        width: _productSize.width,
-                        height: _productSize.height,
-                      ),
-                    ),
-                  ),
-                  if (_customLogo != null)
-                    Positioned(
-                      left: _logoPosition.dx,
-                      top: _logoPosition.dy,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedElement = 'logo'),
-                        child: Transform(
-                          transform: Matrix4.identity()
-                            ..translate(-50 * _logoScale, -50 * _logoScale)
-                            ..scale(_logoScale)
-                            ..rotateZ(_logoRotation),
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              border: _selectedElement == 'logo'
-                                  ? Border.all(color: Colors.blue, width: 2)
-                                  : null,
-                            ),
-                            child: Image.file(
-                              _customLogo!,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (_customText.isNotEmpty)
-                    Positioned(
-                      left: _textPosition.dx,
-                      top: _textPosition.dy,
-                      child: GestureDetector(
-                        onTap: () => setState(() => _selectedElement = 'text'),
-                        child: Transform(
-                          transform: Matrix4.identity()
-                            ..translate(-_getTextWidth() / 2, -24 * _textScale / 2)
-                            ..scale(_textScale)
-                            ..rotateZ(_textRotation),
-                          child: Container(
-                            padding: EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.7),
-                              border: _selectedElement == 'text'
-                                  ? Border.all(color: Colors.red, width: 2)
-                                  : null,
-                            ),
-                            child: Text(
-                              _customText,
-                              style: TextStyle(
-                                fontFamily: _selectedFont,
-                                fontSize: 24,
-                                color: _textColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            height: 300,
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 10,
-                  offset: Offset(0, -5),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildPositionSelector(),
-                  const SizedBox(height: 12),
-                  if (_selectedElement != null) _buildElementControls(),
-                  const SizedBox(height: 12),
-                  _buildTextCustomization(),
-                  const SizedBox(height: 12),
-                  _buildLogoUpload(),
-                  const SizedBox(height: 12),
-                  _buildColorSelector(),
-                  const SizedBox(height: 12),
-                  _buildBottomControls(),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void _handleScaleStart(ScaleStartDetails details) {
+    if (_selectedElement == null) return;
   }
 
-  // [Previous methods remain unchanged until _buildBottomControls]
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    if (_isDisposed || _selectedElement == null) return;
 
-  Widget _buildPositionSelector() {
-    return DropdownButton<String>(
-      value: _selectedPosition,
-      items: _availablePositions.map((position) {
-        return DropdownMenuItem(
-          value: position,
-          child: Text(position),
-        );
-      }).toList(),
-      onChanged: (value) {
+    setState(() {
+      if (_selectedElement == 'logo') {
+        _logoPosition += details.focalPointDelta;
+        _logoScale *= details.scale;
+        _logoRotation += details.rotation;
+      } else if (_selectedElement == 'text') {
+        _textPosition += details.focalPointDelta;
+        _textScale *= details.scale;
+        _textRotation += details.rotation;
+      }
+    });
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    if (_isDisposed) return;
+
+    final tapPosition = details.localPosition;
+    final logoRect = Rect.fromCenter(
+      center: _logoPosition,
+      width: 100 * _logoScale,
+      height: 100 * _logoScale,
+    );
+    final textRect = Rect.fromCenter(
+      center: _textPosition,
+      width: _getTextWidth() * _textScale,
+      height: 24 * _textScale,
+    );
+
+    setState(() {
+      if (_customLogo != null && logoRect.contains(tapPosition)) {
+        _selectedElement = 'logo';
+      } else if (_customText.isNotEmpty && textRect.contains(tapPosition)) {
+        _selectedElement = 'text';
+      } else {
+        _selectedElement = null;
+      }
+    });
+  }
+
+  Future<void> _uploadLogo() async {
+    if (_isDisposed) return;
+    
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
         setState(() {
-          _selectedPosition = value!;
+          _customLogo = File(pickedFile.path);
+          _selectedElement = 'logo';
         });
-      },
-    );
+      }
+    } catch (e) {
+      debugPrint('Error uploading logo: $e');
+    }
   }
 
-  Widget _buildElementControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.rotate_left),
-          onPressed: () {
-            setState(() {
-              if (_selectedElement == 'logo') {
-                _logoRotation -= 0.1;
-              } else if (_selectedElement == 'text') {
-                _textRotation -= 0.1;
-              }
-            });
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.rotate_right),
-          onPressed: () {
-            setState(() {
-              if (_selectedElement == 'logo') {
-                _logoRotation += 0.1;
-              } else if (_selectedElement == 'text') {
-                _textRotation += 0.1;
-              }
-            });
-          },
-        ),
-      ],
-    );
-  }
+  void _showColorPicker([bool isProductColor = true]) {
+    if (_isDisposed) return;
 
-  Widget _buildTextCustomization() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _textController,
-          decoration: const InputDecoration(labelText: 'Texte personnalisé'),
-          onChanged: (value) {
-            setState(() {
-              _customText = value;
-            });
-          },
-        ),
-        DropdownButton<String>(
-          value: _selectedFont,
-          items: _availableFonts.map((font) {
-            return DropdownMenuItem(
-              value: font,
-              child: Text(font),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedFont = value!;
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogoUpload() {
-    return ElevatedButton(
-      onPressed: _uploadLogo,
-      child: const Text('Télécharger un logo'),
-    );
-  }
-
-  Widget _buildColorSelector() {
-    return Row(
-      children: _availableColors.map((color) {
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _productColor = color;
-            });
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: _productColor == color ? Colors.black : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildBottomControls() {
-    final totalPrice = widget.price * _quantity;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.remove),
-                    onPressed: () {
-                      if (_quantity > 1) setState(() => _quantity--);
-                    },
-                  ),
-                  Text('$_quantity'),
-                  IconButton(
-                    icon: Icon(Icons.add),
-                    onPressed: () => setState(() => _quantity++),
-                  ),
-                  Spacer(),
-                  Text(
-                    'Total: ${totalPrice.toStringAsFixed(2)} €',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _saveCustomization,
-              child: Text('Valider'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 8),
-        ElevatedButton.icon(
-          onPressed: _showEmailDialog,
-          icon: Icon(Icons.email),
-          label: Text('Envoyer un devis'),
-          style: ElevatedButton.styleFrom(
-            minimumSize: Size(double.infinity, 48),
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showEmailDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Envoyer le devis'),
+        title: Text(isProductColor ? 'Couleur du produit' : 'Couleur du texte'),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _clientNameController,
-                decoration: InputDecoration(
-                  labelText: 'Nom du client',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _clientEmailController,
-                decoration: InputDecoration(
-                  labelText: 'Email du client (optionnel)',
-                  border: OutlineInputBorder(),
-                  hintText: 'exemple@domaine.com',
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              SizedBox(height: 20),
-              Text('Récapitulatif du devis:', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              _buildQuoteSummary(),
-            ],
+          child: ColorPicker(
+            pickerColor: isProductColor ? _productColor : _textColor,
+            onColorChanged: (color) {
+              if (!_isDisposed) {
+                setState(() {
+                  if (isProductColor) {
+                    _productColor = color;
+                  } else {
+                    _textColor = color;
+                  }
+                });
+              }
+            },
+            showLabel: true,
+            pickerAreaHeightPercent: 0.8,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: _sendQuote,
-            child: Text('Envoyer'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-            ),
+            child: Text('Valider'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _sendQuote() async {
-    final email = _clientEmailController.text;
-    final subject = 'Devis pour ${widget.name}';
-    final body = _generateEmailBody();
+  void _showEmailDialog() {
+    if (_isDisposed) return;
 
-    // Try to open default mail app first
-    final mailtoUri = Uri(
-      scheme: 'mailto',
-      path: email,
-      queryParameters: {
-        'subject': subject,
-        'body': body,
-      },
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Demander un devis'),
+            content: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Informations client', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _clientNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Nom complet*',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _clientEmailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email*',
+                        border: OutlineInputBorder(),
+                        hintText: 'exemple@domaine.com',
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _clientPhoneController,
+                      decoration: InputDecoration(
+                        labelText: 'Téléphone*',
+                        border: OutlineInputBorder(),
+                        hintText: '06 12 34 56 78',
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      controller: _clientAddressController,
+                      decoration: InputDecoration(
+                        labelText: 'Adresse',
+                        border: OutlineInputBorder(),
+                        hintText: 'Adresse de livraison',
+                      ),
+                      maxLines: 2,
+                    ),
+                    SizedBox(height: 20),
+                    Text('Récapitulatif du devis', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    SizedBox(height: 10),
+                    _buildQuoteSummary(),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Annuler'),
+              ),
+              ElevatedButton(
+                onPressed: _isSaving ? null : () => _sendQuote(context),
+                child: _isSaving
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text('Envoyer la demande'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
+  }
 
+  Widget _buildQuoteSummary() {
+    final totalPrice = widget.price * _quantity;
+    final vat = totalPrice * 0.2;
+    final totalWithVat = totalPrice + vat;
+    final reference = 'DEV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Container(
+              padding: EdgeInsets.all(5),
+              color: Colors.blue[50],
+              child: Row(
+                children: [
+                  Icon(Icons.receipt, color: Colors.blue),
+                  SizedBox(width: 5),
+                  Text(
+                    'DEVIS N°$reference',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+            
+            // Product preview
+            Container(
+              height: 150,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[100],
+              ),
+              child: _buildProductPreview(),
+            ),
+            SizedBox(height: 16),
+            
+            // Product details
+            Text('Détails du produit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(height: 8),
+            Table(
+              columnWidths: {0: FlexColumnWidth(2), 1: FlexColumnWidth(3)},
+              children: [
+                _buildTableRow('Produit', widget.name),
+                _buildTableRow('Type', widget.productType),
+                _buildTableRow('Quantité', '$_quantity'),
+                _buildTableRow('Prix unitaire', '${widget.price.toStringAsFixed(2)} €'),
+              ],
+            ),
+            Divider(),
+            
+            // Customization
+            Text('Personnalisation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(height: 8),
+            Table(
+              columnWidths: {0: FlexColumnWidth(2), 1: FlexColumnWidth(3)},
+              children: [
+                _buildTableRowWithColor('Couleur', _productColor),
+                if (_customText.isNotEmpty) ...[
+                  _buildTableRow('Texte', _customText),
+                  _buildTableRow('Police', _selectedFont),
+                  _buildTableRowWithColor('Couleur texte', _textColor),
+                ],
+                if (_customLogo != null)
+                  _buildTableRow('Logo', 'Personnalisé'),
+                _buildTableRow('Position', _selectedPosition),
+              ],
+            ),
+            Divider(),
+            
+            // Pricing
+            Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(height: 8),
+            Table(
+              columnWidths: {0: FlexColumnWidth(2), 1: FlexColumnWidth(3)},
+              children: [
+                _buildTableRow('Sous-total', '${totalPrice.toStringAsFixed(2)} €'),
+                _buildTableRow('TVA (20%)', '${vat.toStringAsFixed(2)} €'),
+                _buildTableRow('Total TTC', '${totalWithVat.toStringAsFixed(2)} €',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+              ],
+            ),
+            SizedBox(height: 10),
+            Text('*TVA incluse', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            SizedBox(height: 10),
+            Text('Valable 30 jours', style: TextStyle(fontStyle: FontStyle.italic)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  TableRow _buildTableRow(String label, String value, {TextStyle? style}) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: Text('$label:', style: TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: Text(value, style: style),
+        ),
+      ],
+    );
+  }
+
+  TableRow _buildTableRowWithColor(String label, Color color) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: Text('$label:', style: TextStyle(fontWeight: FontWeight.w500)),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: color,
+                  border: Border.all(color: Colors.black),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(width: 8),
+              Text(_getColorName(color)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _sendQuote(BuildContext context) async {
+    if (_isDisposed) return;
+    if (_clientNameController.text.isEmpty || 
+        _clientEmailController.text.isEmpty || 
+        _clientPhoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Veuillez remplir tous les champs obligatoires (*)')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
     try {
+      final productImage = await _captureProductImage();
+      final email = _clientEmailController.text;
+      final subject = 'Devis ${widget.name} pour ${_clientNameController.text}';
+      final body = _generateEmailBody();
+
+      final mailtoUri = Uri(
+        scheme: 'mailto',
+        path: email,
+        queryParameters: {
+          'subject': subject,
+          'body': body,
+        },
+      );
+
       if (await canLaunchUrl(mailtoUri)) {
         await launchUrl(mailtoUri);
+        if (!_isDisposed) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Demande de devis envoyée avec succès')),
+          );
+        }
       } else {
-        // Fallback option - show dialog with copy option
         await _showFallbackOptions(context, subject, body);
       }
     } catch (e) {
-      await _showFallbackOptions(context, subject, body);
+      if (!_isDisposed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'envoi: $e')),
+        );
+      }
+    } finally {
+      if (!_isDisposed) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
-  Future<void> _showFallbackOptions(BuildContext context, String subject, String body) async {
-    return showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Options d\'envoi'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text('Aucune application mail n\'est configurée.'),
-                SizedBox(height: 20),
-                Text('Vous pouvez :'),
-                SizedBox(height: 10),
-                Text('1. Copier le devis pour le coller dans votre application mail'),
-                SizedBox(height: 10),
-                Text('2. Configurer une application mail dans les paramètres de votre appareil'),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Copier le devis'),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(
-                  text: 'Sujet: $subject\n\n$body'
-                ));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Devis copié dans le presse-papier')),
-                );
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  String _generateEmailBody() {
+    final totalPrice = widget.price * _quantity;
+    final vat = totalPrice * 0.2;
+    final totalWithVat = totalPrice + vat;
+    final reference = 'DEV-${DateTime.now().millisecondsSinceEpoch.toString().substring(4)}';
+    
+    return '''
+DEVIS PERSONNALISÉ
+==================
 
- String _generateEmailBody() {
-  final devisData = {
-    'numero': 'DEV${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
-    'client': _clientNameController.text,
-    'produit': widget.name,
-    'description': widget.productType,
-    'quantite': _quantity,
-    'prix_unitaire': widget.price.toStringAsFixed(2),
-    'total': (widget.price * _quantity).toStringAsFixed(2),
-    'couleur': _getColorName(_productColor),
-    'texte': _customText,
-    'logo': _customLogo != null,
-    'position': _selectedPosition,
-  };
+Référence: $reference
+Date: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}
 
-  final jsonData = jsonEncode(devisData);
-  final encodedData = Uri.encodeComponent(jsonData);
-  
-  final link = 'https://votreusername.github.io/devis-website?data=$encodedData';
-  final suiviLink = 'https://votreusername.github.io/devis-website/suivi.html?id=${devisData['numero']}';
+INFORMATIONS CLIENT
+-------------------
+Nom: ${_clientNameController.text}
+Email: ${_clientEmailController.text}
+Téléphone: ${_clientPhoneController.text}
+${_clientAddressController.text.isNotEmpty ? 'Adresse: ${_clientAddressController.text}' : ''}
 
-  return '''
-Bonjour ${_clientNameController.text},
+DÉTAILS DU PRODUIT
+------------------
+Produit: ${widget.name}
+Type: ${widget.productType}
+Quantité: $_quantity
+Prix unitaire: ${widget.price.toStringAsFixed(2)} €
+Sous-total: ${totalPrice.toStringAsFixed(2)} €
+TVA (20%): ${vat.toStringAsFixed(2)} €
+TOTAL TTC: ${totalWithVat.toStringAsFixed(2)} €
 
-Voici votre devis personnalisé. Pour le valider et procéder au paiement, cliquez sur le lien ci-dessous :
+PERSONNALISATION
+----------------
+Couleur: ${_getColorName(_productColor)}
+${_customText.isNotEmpty ? 'Texte: "$_customText"\nPolice: $_selectedFont\nCouleur texte: ${_getColorName(_textColor)}' : ''}
+${_customLogo != null ? 'Logo personnalisé: Oui' : ''}
+Position: $_selectedPosition
 
-👉 ${link}
+CONDITIONS
+----------
+- Valable 30 jours
+- Paiement à la commande
+- Livraison sous 15 jours ouvrés
 
-Après paiement, vous pourrez suivre l'avancement de votre commande ici :
-🔎 ${suiviLink}
+Pour valider ce devis ou pour toute question, veuillez répondre à cet email.
 
 Cordialement,
 [Votre Entreprise]
+[Votre Téléphone]
+[Votre Email]
+[Votre Site Web]
 ''';
-}
+  }
 
   String _getColorName(Color color) {
     if (color == Colors.black) return 'Noir';
@@ -1013,87 +1470,498 @@ Cordialement,
     return 'Couleur personnalisée';
   }
 
-  Widget _buildQuoteSummary() {
+  Future<void> _showFallbackOptions(BuildContext context, String subject, String body) async {
+    if (_isDisposed) return;
+    
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Options d\'envoi'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                Text('Impossible d\'ouvrir l\'application email. Vous pouvez copier le devis ci-dessous:'),
+                SizedBox(height: 20),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    'Sujet: $subject\n\n$body',
+                    style: TextStyle(fontFamily: 'Courier'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('Copier'),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: 'Sujet: $subject\n\n$body'));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Devis copié dans le presse-papier')),
+                );
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Fermer'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPositionSelector() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Position du motif',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedPosition,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              isExpanded: true,
+              items: _availablePositions.map((position) {
+                return DropdownMenuItem(
+                  value: position,
+                  child: Text(position),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (!_isDisposed && value != null) {
+                  setState(() {
+                    _selectedPosition = value;
+                    _applySmartPositioning();
+                  });
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildElementControls() {
+    if (_selectedElement == null) return SizedBox.shrink();
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Modifier ${_selectedElement == 'logo' ? 'le logo' : 'le texte'}',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildControlButton(
+                  icon: Icons.rotate_left,
+                  label: 'Rotation -',
+                  onPressed: () {
+                    if (_isDisposed) return;
+                    setState(() {
+                      if (_selectedElement == 'logo') {
+                        _logoRotation -= 0.1;
+                      } else if (_selectedElement == 'text') {
+                        _textRotation -= 0.1;
+                      }
+                    });
+                  },
+                ),
+                _buildControlButton(
+                  icon: Icons.rotate_right,
+                  label: 'Rotation +',
+                  onPressed: () {
+                    if (_isDisposed) return;
+                    setState(() {
+                      if (_selectedElement == 'logo') {
+                        _logoRotation += 0.1;
+                      } else if (_selectedElement == 'text') {
+                        _textRotation += 0.1;
+                      }
+                    });
+                  },
+                ),
+                _buildControlButton(
+                  icon: Icons.zoom_in,
+                  label: 'Agrandir',
+                  onPressed: () {
+                    if (_isDisposed) return;
+                    setState(() {
+                      if (_selectedElement == 'logo') {
+                        _logoScale *= 1.1;
+                      } else if (_selectedElement == 'text') {
+                        _textScale *= 1.1;
+                      }
+                    });
+                  },
+                ),
+                _buildControlButton(
+                  icon: Icons.zoom_out,
+                  label: 'Réduire',
+                  onPressed: () {
+                    if (_isDisposed) return;
+                    setState(() {
+                      if (_selectedElement == 'logo') {
+                        _logoScale *= 0.9;
+                      } else if (_selectedElement == 'text') {
+                        _textScale *= 0.9;
+                      }
+                    });
+                  },
+                ),
+                if (_selectedElement == 'text')
+                  _buildControlButton(
+                    icon: Icons.color_lens,
+                    label: 'Couleur',
+                    onPressed: () => _showColorPicker(false),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControlButton({required IconData icon, required String label, required VoidCallback onPressed}) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildQuoteItem('Produit', widget.name),
-        _buildQuoteItem('Type', widget.productType),
-        _buildQuoteItem('Quantité', '$_quantity'),
-        _buildQuoteItem('Prix unitaire', '${widget.price.toStringAsFixed(2)} €'),
-        _buildQuoteItem('Prix total', '${(widget.price * _quantity).toStringAsFixed(2)} €'),
-        Divider(),
-        _buildQuoteItem('Couleur', _getColorName(_productColor)),
-        if (_customText.isNotEmpty) _buildQuoteItem('Texte', _customText),
-        if (_customText.isNotEmpty) _buildQuoteItem('Police', _selectedFont),
-        if (_customText.isNotEmpty) _buildQuoteItem('Couleur texte', _getColorName(_textColor)),
-        _buildQuoteItem('Logo', _customLogo != null ? 'Oui' : 'Non'),
-        _buildQuoteItem('Position', _selectedPosition),
+        IconButton(
+          icon: Icon(icon),
+          onPressed: onPressed,
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.blue[50],
+            padding: EdgeInsets.all(12),
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 12)),
       ],
     );
   }
 
-  Widget _buildQuoteItem(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('$label:', style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(value),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _uploadLogo() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _customLogo = File(pickedFile.path);
-        _selectedElement = 'logo';
-      });
-    }
-  }
-
-  void _saveCustomization() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Personnalisation enregistrée'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showColorPicker([bool isProductColor = true]) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isProductColor ? 'Couleur du produit' : 'Couleur du texte'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: isProductColor ? _productColor : _textColor,
-            onColorChanged: (color) {
-              setState(() {
-                if (isProductColor) {
-                  _productColor = color;
-                } else {
-                  _textColor = color;
+  Widget _buildTextCustomization() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Personnalisation du texte',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                labelText: 'Texte à imprimer',
+                border: OutlineInputBorder(),
+                suffixIcon: _customText.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          if (_isDisposed) return;
+                          setState(() {
+                            _customText = '';
+                            _textController.clear();
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                if (_isDisposed) return;
+                setState(() {
+                  _customText = value;
+                  _selectedElement = 'text';
+                });
+              },
+            ),
+            SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _selectedFont,
+              decoration: InputDecoration(
+                labelText: 'Police d\'écriture',
+                border: OutlineInputBorder(),
+              ),
+              items: _availableFonts.map((font) {
+                return DropdownMenuItem(
+                  value: font,
+                  child: Text(font),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (!_isDisposed && value != null) {
+                  setState(() => _selectedFont = value);
                 }
-              });
-            },
-            showLabel: true,
-            pickerAreaHeightPercent: 0.8,
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoUpload() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Logo personnalisé',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _uploadLogo,
+              icon: Icon(Icons.upload),
+              label: Text(_customLogo != null ? 'Changer le logo' : 'Ajouter un logo'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 48),
+                backgroundColor: Colors.blue[50],
+                foregroundColor: Colors.blue,
+              ),
+            ),
+            if (_customLogo != null) ...[
+              SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () {
+                  if (_isDisposed) return;
+                  setState(() {
+                    _customLogo = null;
+                    _selectedElement = null;
+                  });
+                },
+                child: Text('Supprimer le logo'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: Size(double.infinity, 48),
+                  backgroundColor: Colors.red[50],
+                  foregroundColor: Colors.red,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSelector() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Couleur du produit',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            SizedBox(height: 12),
+            Text('Couleurs disponibles:', style: TextStyle(color: Colors.grey)),
+            SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _availableColors.map((color) {
+                return GestureDetector(
+                  onTap: () {
+                    if (_isDisposed) return;
+                    setState(() => _productColor = color);
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _productColor == color ? Colors.black : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                    child: _productColor == color
+                        ? Icon(Icons.check, color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white)
+                        : null,
+                  ),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => _showColorPicker(true),
+              icon: Icon(Icons.color_lens),
+              label: Text('Autre couleur'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }     
+@override
+Widget build(BuildContext context) {
+  final totalPrice = widget.price * _quantity;
+
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(widget.name),
+      actions: [
+        IconButton(
+          icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border),
+          color: _isFavorite ? Colors.red : null,
+          onPressed: () => setState(() => _isFavorite = !_isFavorite),
+        ),
+        if (_isSaving) Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      ],
+    ),
+    body: Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Product preview
+                Container(
+                  padding: EdgeInsets.all(16),
+                  color: Colors.grey[50],
+                  child: Center(
+                    child: GestureDetector(
+                      onScaleStart: _handleScaleStart,
+                      onScaleUpdate: _handleScaleUpdate,
+                      onTapUp: _handleTapUp,
+                      child: _buildProductPreview(),
+                    ),
+                  ),
+                ),
+                
+                // Customization controls
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Personnalisez votre produit', style: Theme.of(context).textTheme.titleLarge),
+                      SizedBox(height: 16),
+                      _buildPositionSelector(),
+                      SizedBox(height: 16),
+                      if (_selectedElement != null) _buildElementControls(),
+                      SizedBox(height: 16),
+                      _buildTextCustomization(),
+                      SizedBox(height: 16),
+                      _buildLogoUpload(),
+                      SizedBox(height: 16),
+                      _buildColorSelector(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('OK'),
+        
+        // Bottom controls
+        Container(
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, -5),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+          child: Row(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.remove),
+                      onPressed: () {
+                        if (_quantity > 1) setState(() => _quantity--);
+                      },
+                    ),
+                    Container(
+                      width: 50,
+                      alignment: Alignment.center,
+                      child: Text('$_quantity', style: TextStyle(fontSize: 18)),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: () => setState(() => _quantity++),
+                    ),
+                    Spacer(),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Total', style: TextStyle(color: Colors.grey)),
+                        Text(
+                          '${totalPrice.toStringAsFixed(2)} €',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _isSaving ? null : _showEmailDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  minimumSize: Size(120, 50),
+                ),
+                child: _isSaving
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text('Devis', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }
