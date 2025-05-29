@@ -1467,7 +1467,7 @@ Cordialement,
     if (color == const Color(0xFF0038A8)) return 'Bleu';
     if (color == const Color(0xFF6D3B8E)) return 'Violet';
     if (color == const Color(0xFFFF6B00)) return 'Orange';
-    return 'personnalisée';
+    return 'Couleur personnalisée';
   }
 
   Future<void> _showFallbackOptions(BuildContext context, String subject, String body) async {
@@ -1963,5 +1963,5 @@ Widget build(BuildContext context) {
       ],
     ),
   );
- }
+}
 }
