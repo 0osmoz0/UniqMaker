@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi de Commande | Votre Entreprise</title>
-    <meta name="description" content="Suivez l'avancement de votre commande avec notre outil en ligne.">
+    <title>Paiement et Suivi | UniqMaker</title>
+    <meta name="description" content="Paiement sécurisé et suivi de votre commande personnalisée">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --primary: #2a5bd7;
@@ -16,6 +17,8 @@
             --light: #f8f9fa;
             --dark: #212529;
             --gray: #6c757d;
+            --stripe: #635bff;
+            --paypal: #003087;
         }
 
         body {
@@ -26,9 +29,13 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
+        }
+
+        .main-container {
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 2rem 1rem;
         }
 
         .container {
@@ -37,23 +44,129 @@
             background: white;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
-            margin: 2rem;
-            padding: 2rem;
-            box-sizing: border-box;
-        }
-
-        header {
-            text-align: center;
             margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid var(--light);
+            overflow: hidden;
         }
 
-        h1 {
+        .header-section {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header-section h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
+        }
+
+        .content-section {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .payment-section, .tracking-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 2rem;
+        }
+
+        .payment-section {
+            border-right: 1px solid var(--light);
+        }
+
+        .section-title {
             color: var(--primary);
-            margin-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
+        .section-title i {
+            font-size: 1.2rem;
+        }
+
+        .order-summary {
+            background: var(--light);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+        }
+
+        .summary-total {
+            font-weight: 700;
+            font-size: 1.2rem;
+            border-top: 1px solid #ddd;
+            padding-top: 0.8rem;
+            margin-top: 0.8rem;
+        }
+
+        .payment-methods {
+            margin-top: 2rem;
+        }
+
+        .payment-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .payment-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .payment-btn i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .stripe-btn {
+            background: var(--stripe);
+            color: white;
+        }
+
+        .paypal-btn {
+            background: #ffc439;
+            color: var(--paypal);
+        }
+
+        .bank-btn {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        .secure-payment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        .secure-payment i {
+            color: var(--success);
+            margin-right: 8px;
+        }
+
+        /* Styles pour la partie suivi de commande */
         .order-info {
             background: var(--light);
             padding: 1.5rem;
@@ -190,163 +303,315 @@
         }
 
         @media (max-width: 768px) {
-            .container {
-                margin: 1rem;
-                padding: 1rem;
+            .content-section {
+                flex-direction: column;
             }
-
-            .info-grid {
-                grid-template-columns: 1fr;
+            
+            .payment-section {
+                border-right: none;
+                border-bottom: 1px solid var(--light);
+            }
+            
+            .container {
+                margin: 0 0 1rem 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="app-container"></div>
+    <div class="main-container">
+        <div class="container">
+            <div class="header-section">
+                <h1><i class="fas fa-check-circle"></i> Votre commande est prête</h1>
+                <p>Paiement sécurisé et suivi en temps réel</p>
+            </div>
+            
+            <div class="content-section">
+                <div class="payment-section">
+                    <h2 class="section-title"><i class="fas fa-credit-card"></i> Paiement sécurisé</h2>
+                    
+                    <div class="order-summary">
+                        <div class="summary-item">
+                            <span>Produit:</span>
+                            <span id="product-name">Chargement...</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Quantité:</span>
+                            <span id="product-quantity">1</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Sous-total:</span>
+                            <span id="subtotal">0.00 €</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Livraison:</span>
+                            <span>Gratuite</span>
+                        </div>
+                        <div class="summary-item summary-total">
+                            <span>Total:</span>
+                            <span id="total-amount">0.00 €</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-methods">
+                        <button class="payment-btn stripe-btn" id="stripe-payment">
+                            <i class="fab fa-cc-stripe"></i> Payer par carte
+                        </button>
+                        <button class="payment-btn paypal-btn" id="paypal-payment">
+                            <i class="fab fa-cc-paypal"></i> Payer avec PayPal
+                        </button>
+                        <button class="payment-btn bank-btn" id="bank-transfer">
+                            <i class="fas fa-university"></i> Virement bancaire
+                        </button>
+                    </div>
+                    
+                    <div class="secure-payment">
+                        <i class="fas fa-lock"></i> Paiement 100% sécurisé - SSL crypté
+                    </div>
+                </div>
+                
+                <div class="tracking-section">
+                    <h2 class="section-title"><i class="fas fa-truck"></i> Suivi de commande</h2>
+                    
+                    <div id="tracking-container">
+                        <div class="order-info">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Référence</span>
+                                    <span class="info-value" id="order-id">DEV-123456</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Date</span>
+                                    <span class="info-value" id="order-date">Chargement...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline" id="order-timeline">
+                            <!-- Timeline sera générée dynamiquement -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
-            const devisId = urlParams.get('id');
-            const hash = urlParams.get('hash');
+            const orderId = urlParams.get('id');
+            const amount = urlParams.get('amount');
+            const product = urlParams.get('product');
+            const quantity = urlParams.get('quantity') || 1;
 
-            if (!devisId) {
-                showError("Lien de suivi invalide", "Merci d'utiliser le lien fourni dans votre email de confirmation");
+            if (!orderId) {
+                showError("Lien invalide", "Merci d'utiliser le lien fourni dans votre email de confirmation");
                 return;
             }
 
-            if (!isValidDevisId(devisId)) {
-                showError("Devis introuvable", "Le numéro de devis n'est pas valide");
-                return;
+            // Mettre à jour les informations de la commande
+            document.getElementById('order-id').textContent = orderId;
+            
+            if (product) {
+                document.getElementById('product-name').textContent = decodeURIComponent(product);
+            }
+            
+            document.getElementById('product-quantity').textContent = quantity;
+            
+            if (amount) {
+                const numericAmount = parseFloat(amount);
+                document.getElementById('subtotal').textContent = numericAmount.toFixed(2) + ' €';
+                document.getElementById('total-amount').textContent = numericAmount.toFixed(2) + ' €';
             }
 
-            fetchDevisData(devisId)
-                .then(devisData => {
-                    if (devisData.error) {
-                        showError("Erreur", devisData.error);
-                        return;
-                    }
-                    renderDevisPage(devisData);
-                })
-                .catch(error => {
-                    showError("Erreur technique", "Impossible de charger les données du devis");
-                    console.error(error);
-                });
+            // Date actuelle
+            const now = new Date();
+            document.getElementById('order-date').textContent = formatDate(now);
 
-            function isValidDevisId(id) {
-                return /^DEV-[A-Z0-9]{6,12}$/.test(id);
+            // Initialiser la timeline
+            initializeTimeline(orderId);
+
+            // Gestionnaires de paiement
+            document.getElementById('stripe-payment').addEventListener('click', function() {
+                processPayment('stripe', orderId, amount);
+            });
+            
+            document.getElementById('paypal-payment').addEventListener('click', function() {
+                processPayment('paypal', orderId, amount);
+            });
+            
+            document.getElementById('bank-transfer').addEventListener('click', function() {
+                showBankDetails(orderId, amount);
+            });
+
+            function initializeTimeline(orderId) {
+                fetchOrderData(orderId)
+                    .then(orderData => {
+                        if (orderData.error) {
+                            showError("Erreur", orderData.error);
+                            return;
+                        }
+                        renderTimeline(orderData);
+                    })
+                    .catch(error => {
+                        console.error("Erreur de chargement:", error);
+                    });
             }
 
-            function showError(title, message) {
-                const container = document.getElementById('app-container');
-                container.innerHTML = `
-                    <div class="error-container">
-                        <h2>${title}</h2>
-                        <p>${message}</p>
-                        <a href="mailto:contact@votreentreprise.com" class="btn">Nous contacter</a>
-                    </div>
-                `;
-            }
-
-            async function fetchDevisData(devisId) {
+            async function fetchOrderData(orderId) {
+                // Simuler un appel API
                 return new Promise(resolve => {
                     setTimeout(() => {
                         resolve({
-                            id: devisId,
-                            client: "Jean Dupont",
-                            produit: "T-shirt personnalisé",
-                            montant: 49.99,
-                            date: "2023-06-15",
-                            status: "production",
-                            etapes: [
-                                { id: 1, nom: "Devis accepté", date: "2023-06-15 14:30", complete: true },
-                                { id: 2, nom: "Paiement confirmé", date: "2023-06-15 14:32", complete: true },
-                                { id: 3, nom: "En production", date: "2023-06-16 09:15", complete: true },
-                                { id: 4, nom: "Expédié", date: null, complete: false },
-                                { id: 5, nom: "Livré", date: null, complete: false }
+                            id: orderId,
+                            status: "pending_payment",
+                            steps: [
+                                { id: 1, name: "Devis créé", date: new Date(), complete: true },
+                                { id: 2, name: "Paiement", date: null, complete: false },
+                                { id: 3, name: "En préparation", date: null, complete: false },
+                                { id: 4, name: "Expédié", date: null, complete: false },
+                                { id: 5, name: "Livré", date: null, complete: false }
                             ]
                         });
                     }, 500);
                 });
             }
 
-            function renderDevisPage(devis) {
-                const container = document.getElementById('app-container');
-
-                container.innerHTML = `
-                    <header>
-                        <h1>Suivi de votre commande</h1>
-                        <p>Numéro de devis: ${escapeHtml(devis.id)}</p>
-                    </header>
-
-                    <div class="order-info">
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="info-label">Client</span>
-                                <span class="info-value">${escapeHtml(devis.client)}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Produit</span>
-                                <span class="info-value">${escapeHtml(devis.produit)}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Date</span>
-                                <span class="info-value">${formatDate(devis.date)}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Montant</span>
-                                <span class="info-value">${devis.montant.toFixed(2)} €</span>
-                            </div>
+            function renderTimeline(orderData) {
+                const timelineContainer = document.getElementById('order-timeline');
+                
+                timelineContainer.innerHTML = orderData.steps.map(step => `
+                    <div class="step ${step.complete ? 'completed' : (step.id === 2 && orderData.status === 'pending_payment' ? 'active' : '')}">
+                        <div class="step-circle">${step.id}</div>
+                        <div class="step-content">
+                            <h3>${escapeHtml(step.name)}</h3>
+                            ${step.date ? `<p class="step-date">${formatDateTime(step.date)}</p>` : ''}
+                            <span class="status ${getStatusClass(step, orderData)}">
+                                ${getStatusText(step, orderData)}
+                            </span>
                         </div>
                     </div>
+                `).join('');
+            }
 
-                    <div class="timeline">
-                        ${devis.etapes.map(etape => `
-                            <div class="step ${etape.complete ? 'completed' : (isCurrentStep(etape, devis.etapes) ? 'active' : '')}">
-                                <div class="step-circle">${etape.id}</div>
-                                <div class="step-content">
-                                    <h3>${escapeHtml(etape.nom)}</h3>
-                                    ${etape.date ? `<p class="step-date">${formatDateTime(etape.date)}</p>` : ''}
-                                    <span class="status ${getStatusClass(etape, devis.etapes)}">
-                                        ${getStatusText(etape, devis.etapes)}
-                                    </span>
-                                </div>
-                            </div>
-                        `).join('')}
+            function processPayment(method, orderId, amount) {
+                // Simuler un processus de paiement
+                alert(`Redirection vers le paiement ${method} pour la commande ${orderId} (${amount} €)`);
+                
+                // En production, vous utiliseriez l'API de Stripe/PayPal ici
+                // window.location.href = `https://api.yourapp.com/pay/${method}?order=${orderId}&amount=${amount}`;
+                
+                // Simulation de paiement réussi
+                setTimeout(() => {
+                    updateOrderStatus(orderId, 'paid');
+                }, 2000);
+            }
+
+            function showBankDetails(orderId, amount) {
+                const bankInfo = `
+                    <h3>Virement bancaire</h3>
+                    <p>Pour payer par virement, utilisez les informations suivantes :</p>
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                        <p><strong>Bénéficiaire:</strong> UNIQMAKER</p>
+                        <p><strong>IBAN:</strong> FR76 3000 4000 5000 6000 7000 123</p>
+                        <p><strong>BIC:</strong> BNPAFRPPXXX</p>
+                        <p><strong>Montant:</strong> ${amount} €</p>
+                        <p><strong>Référence:</strong> ${orderId}</p>
                     </div>
+                    <p>Votre commande sera traitée dès réception du paiement.</p>
+                `;
+                
+                alertWithHtml(bankInfo);
+            }
 
-                    <div style="text-align: center; margin-top: 2rem;">
-                        <p>Questions ? <a href="mailto:contact@votreentreprise.com">Contactez-nous</a></p>
+            function updateOrderStatus(orderId, status) {
+                // Simuler une mise à jour du statut
+                console.log(`Mise à jour du statut de la commande ${orderId} à ${status}`);
+                
+                // En production, vous feriez une requête à votre API
+                // fetch(`/api/orders/${orderId}/status`, { method: 'POST', body: { status } });
+                
+                // Mettre à jour l'affichage
+                const paymentStep = document.querySelector('.step:nth-child(2)');
+                if (paymentStep) {
+                    paymentStep.classList.remove('active');
+                    paymentStep.classList.add('completed');
+                    paymentStep.querySelector('.status').className = 'status status-completed';
+                    paymentStep.querySelector('.status').textContent = 'Terminé';
+                    paymentStep.querySelector('.step-date').textContent = formatDateTime(new Date());
+                }
+            }
+
+            function showError(title, message) {
+                const container = document.getElementById('tracking-container');
+                container.innerHTML = `
+                    <div class="error-container">
+                        <h2>${title}</h2>
+                        <p>${message}</p>
+                        <a href="mailto:contact@uniqmaker.com" class="btn">Nous contacter</a>
                     </div>
                 `;
             }
 
-            function formatDate(dateString) {
-                const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                return new Date(dateString).toLocaleDateString('fr-FR', options);
+            function alertWithHtml(html) {
+                const popup = document.createElement('div');
+                popup.style.position = 'fixed';
+                popup.style.top = '0';
+                popup.style.left = '0';
+                popup.style.width = '100%';
+                popup.style.height = '100%';
+                popup.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                popup.style.display = 'flex';
+                popup.style.justifyContent = 'center';
+                popup.style.alignItems = 'center';
+                popup.style.zIndex = '1000';
+                
+                const content = document.createElement('div');
+                content.style.backgroundColor = 'white';
+                content.style.padding = '2rem';
+                content.style.borderRadius = '8px';
+                content.style.maxWidth = '500px';
+                content.style.width = '90%';
+                content.innerHTML = html;
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.textContent = 'Fermer';
+                closeBtn.style.marginTop = '1rem';
+                closeBtn.style.padding = '0.5rem 1rem';
+                closeBtn.style.backgroundColor = 'var(--primary)';
+                closeBtn.style.color = 'white';
+                closeBtn.style.border = 'none';
+                closeBtn.style.borderRadius = '4px';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.onclick = function() {
+                    document.body.removeChild(popup);
+                };
+                
+                content.appendChild(closeBtn);
+                popup.appendChild(content);
+                document.body.appendChild(popup);
             }
 
-            function formatDateTime(dateTimeString) {
-                const date = new Date(dateTimeString);
+            // Fonctions utilitaires
+            function formatDate(date) {
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                return date.toLocaleDateString('fr-FR', options);
+            }
+
+            function formatDateTime(date) {
                 return date.toLocaleDateString('fr-FR') + ' à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
             }
 
-            function isCurrentStep(etape, etapes) {
-                const completedSteps = etapes.filter(e => e.complete).length;
-                const currentStep = etapes[completedSteps];
-                return currentStep && currentStep.id === etape.id;
-            }
-
-            function getStatusClass(etape, etapes) {
-                if (etape.complete) return 'status-completed';
-                if (isCurrentStep(etape, etapes)) return 'status-active';
+            function getStatusClass(step, orderData) {
+                if (step.complete) return 'status-completed';
+                if (step.id === 2 && orderData.status === 'pending_payment') return 'status-active';
                 return 'status-pending';
             }
 
-            function getStatusText(etape, etapes) {
-                if (etape.complete) return 'Terminé';
-                if (isCurrentStep(etape, etapes)) return 'En cours';
-                return 'En attente';
+            function getStatusText(step, orderData) {
+                if (step.complete) return 'Terminé';
+                if (step.id === 2 && orderData.status === 'pending_payment') return 'En attente';
+                return 'À venir';
             }
 
             function escapeHtml(text) {
