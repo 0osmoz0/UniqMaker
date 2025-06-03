@@ -302,6 +302,62 @@
             margin-top: 1rem;
         }
 
+        .product-preview {
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .product-base {
+            width: 100%;
+            height: auto;
+        }
+
+        .product-text {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .product-logo {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            transform: translate(-50%, -50%);
+        }
+
+        .customization-details {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 8px;
+        }
+
+        .detail-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .color-sample {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #000;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
         @media (max-width: 768px) {
             .content-section {
                 flex-direction: column;
@@ -336,6 +392,10 @@
                             <span id="product-name">Chargement...</span>
                         </div>
                         <div class="summary-item">
+                            <span>Type:</span>
+                            <span id="product-type">Chargement...</span>
+                        </div>
+                        <div class="summary-item">
                             <span>Quantité:</span>
                             <span id="product-quantity">1</span>
                         </div>
@@ -351,6 +411,14 @@
                             <span>Total:</span>
                             <span id="total-amount">0.00 €</span>
                         </div>
+                    </div>
+
+                    <div class="product-preview" id="product-preview">
+                        <!-- Produit sera généré dynamiquement -->
+                    </div>
+
+                    <div class="customization-details" id="customization-details">
+                        <!-- Détails de personnalisation seront générés dynamiquement -->
                     </div>
                     
                     <div class="payment-methods">
@@ -403,6 +471,10 @@
             const amount = urlParams.get('amount');
             const product = urlParams.get('product');
             const quantity = urlParams.get('quantity') || 1;
+            const color = urlParams.get('color');
+            const text = urlParams.get('text');
+            const font = urlParams.get('font');
+            const productType = urlParams.get('type') || 'T-shirt';
 
             if (!orderId) {
                 showError("Lien invalide", "Merci d'utiliser le lien fourni dans votre email de confirmation");
@@ -415,7 +487,8 @@
             if (product) {
                 document.getElementById('product-name').textContent = decodeURIComponent(product);
             }
-            
+
+            document.getElementById('product-type').textContent = productType;
             document.getElementById('product-quantity').textContent = quantity;
             
             if (amount) {
@@ -427,6 +500,12 @@
             // Date actuelle
             const now = new Date();
             document.getElementById('order-date').textContent = formatDate(now);
+
+            // Générer la prévisualisation du produit
+            generateProductPreview(color, text, font);
+
+            // Afficher les détails de personnalisation
+            displayCustomizationDetails(color, text, font);
 
             // Initialiser la timeline
             initializeTimeline(orderId);
@@ -443,6 +522,99 @@
             document.getElementById('bank-transfer').addEventListener('click', function() {
                 showBankDetails(orderId, amount);
             });
+
+            function generateProductPreview(colorValue, customText, fontFamily) {
+                const previewContainer = document.getElementById('product-preview');
+                
+                // Créer une image de base pour le produit
+                const productImage = document.createElement('img');
+                productImage.src = getProductImage(productType);
+                productImage.alt = productType;
+                productImage.className = 'product-base';
+                productImage.style.backgroundColor = colorValue ? `#${parseInt(colorValue).toString(16).substring(2)}` : '#ffffff';
+                
+                previewContainer.appendChild(productImage);
+
+                // Ajouter le texte personnalisé s'il existe
+                if (customText) {
+                    const decodedText = decodeURIComponent(customText);
+                    const textElement = document.createElement('div');
+                    textElement.className = 'product-text';
+                    textElement.textContent = decodedText;
+                    textElement.style.fontFamily = fontFamily || 'Arial';
+                    textElement.style.left = '50%';
+                    textElement.style.top = '60%';
+                    previewContainer.appendChild(textElement);
+                }
+
+                // Ici vous pourriez aussi ajouter le logo si disponible
+            }
+
+            function displayCustomizationDetails(colorValue, customText, fontFamily) {
+                const detailsContainer = document.getElementById('customization-details');
+                
+                let html = '<h3>Personnalisation</h3>';
+                
+                // Couleur
+                if (colorValue) {
+                    const colorHex = `#${parseInt(colorValue).toString(16).substring(2)}`;
+                    html += `
+                        <div class="detail-item">
+                            <span class="detail-label">Couleur:</span>
+                            <span>
+                                <span class="color-sample" style="background-color: ${colorHex};"></span>
+                                ${getColorName(colorHex)}
+                            </span>
+                        </div>
+                    `;
+                }
+
+                // Texte
+                if (customText) {
+                    const decodedText = decodeURIComponent(customText);
+                    html += `
+                        <div class="detail-item">
+                            <span class="detail-label">Texte:</span>
+                            <span>${decodedText}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Police:</span>
+                            <span style="font-family: ${fontFamily || 'Arial'}">${fontFamily || 'Arial'}</span>
+                        </div>
+                    `;
+                }
+
+                detailsContainer.innerHTML = html;
+            }
+
+            function getProductImage(productType) {
+                // Retourne une image par défaut en fonction du type de produit
+                // En production, vous utiliseriez les vraies images
+                switch(productType.toLowerCase()) {
+                    case 't-shirt':
+                        return 'https://via.placeholder.com/300x400/ffffff?text=T-shirt';
+                    case 'sweat':
+                        return 'https://via.placeholder.com/300x400/ffffff?text=Sweat';
+                    case 'casquette':
+                        return 'https://via.placeholder.com/300x300/ffffff?text=Casquette';
+                    default:
+                        return 'https://via.placeholder.com/300x400/ffffff?text=Produit';
+                }
+            }
+
+            function getColorName(colorHex) {
+                const colors = {
+                    '#000000': 'Noir',
+                    '#ffffff': 'Blanc',
+                    '#e30613': 'Rouge',
+                    '#ffd800': 'Jaune',
+                    '#007a30': 'Vert',
+                    '#0038a8': 'Bleu',
+                    '#6d3b8e': 'Violet',
+                    '#ff6b00': 'Orange'
+                };
+                return colors[colorHex.toLowerCase()] || colorHex;
+            }
 
             function initializeTimeline(orderId) {
                 fetchOrderData(orderId)
