@@ -127,7 +127,15 @@ class CataloguePage extends StatelessWidget {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/client-meeting');
+        },
+        child: Icon(Icons.calendar_today),
+        tooltip: 'Prendre RDV',
+      ),
     );
+  }
   }
 
   Widget _sectionTitle(String text) {
@@ -136,7 +144,6 @@ class CataloguePage extends StatelessWidget {
       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
     );
   }
-}
 
 class CompactProductCard extends StatelessWidget {
   final String name;

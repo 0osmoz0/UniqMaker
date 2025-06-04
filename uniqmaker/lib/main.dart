@@ -7,6 +7,8 @@ import 'package:uniqmaker/freelancerdb.dart'; // Ton modèle Hive
 import 'package:uniqmaker/login.dart'; // Ta page login
 import 'package:uniqmaker/signup.dart'; // Ta page signup
 import 'package:uniqmaker/freelancerHome.dart'; // Ta page d’accueil
+import 'catalogue.dart';
+import 'client_meeting_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +34,13 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const FreelancerLoginPage(),
         '/signup': (context) => const HomeScreen(),
         '/HomePage': (context) => const HomePage(),
+        '/product': (context) => ProductDetailPage(
+          name: '',
+          imagePath: '',
+          price: 0,
+          productType: '',
+        ),
+        '/client-meeting': (context) => ClientMeetingPage(),
       },
     );
   }
