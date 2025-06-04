@@ -303,18 +303,26 @@
         }
 
         .product-preview {
+            position: relative;
             width: 100%;
             max-width: 300px;
             margin: 0 auto;
-            position: relative;
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
+            background-color: white;
+            aspect-ratio: 3/4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .product-base {
-            width: 100%;
-            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            position: relative;
+            z-index: 1;
         }
 
         .product-text {
@@ -324,6 +332,7 @@
             background-color: rgba(255, 255, 255, 0.7);
             border-radius: 4px;
             font-weight: bold;
+            z-index: 3;
         }
 
         .product-logo {
@@ -331,6 +340,18 @@
             width: 100px;
             height: 100px;
             transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .color-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            mix-blend-mode: multiply;
+            opacity: 0.7;
+            z-index: 2;
         }
 
         .customization-details {
@@ -470,11 +491,13 @@
             const orderId = urlParams.get('id');
             const amount = urlParams.get('amount');
             const product = urlParams.get('product');
+            const productType = urlParams.get('type') || 'T-shirt';
             const quantity = urlParams.get('quantity') || 1;
             const color = urlParams.get('color');
+            const textColor = urlParams.get('textColor');
             const text = urlParams.get('text');
             const font = urlParams.get('font');
-            const productType = urlParams.get('type') || 'T-shirt';
+            const image = urlParams.get('image');
 
             if (!orderId) {
                 showError("Lien invalide", "Merci d'utiliser le lien fourni dans votre email de confirmation");
@@ -502,10 +525,10 @@
             document.getElementById('order-date').textContent = formatDate(now);
 
             // Générer la prévisualisation du produit
-            generateProductPreview(color, text, font);
+            generateProductPreview(color, text, font, textColor, image, productType);
 
             // Afficher les détails de personnalisation
-            displayCustomizationDetails(color, text, font);
+            displayCustomizationDetails(color, text, font, textColor);
 
             // Initialiser la timeline
             initializeTimeline(orderId);
@@ -523,17 +546,31 @@
                 showBankDetails(orderId, amount);
             });
 
-            function generateProductPreview(colorValue, customText, fontFamily) {
+            function generateProductPreview(colorValue, customText, fontFamily, textColorValue, imagePath, productType) {
                 const previewContainer = document.getElementById('product-preview');
+                previewContainer.innerHTML = ''; // Nettoyer le conteneur
                 
                 // Créer une image de base pour le produit
                 const productImage = document.createElement('img');
-                productImage.src = getProductImage(productType);
+                productImage.src = getProductImage(imagePath, productType);
                 productImage.alt = productType;
                 productImage.className = 'product-base';
-                productImage.style.backgroundColor = colorValue ? `#${parseInt(colorValue).toString(16).substring(2)}` : '#ffffff';
+                
+                // Gestion de l'erreur de chargement d'image
+                productImage.onerror = function() {
+                    this.src = getDefaultProductImage(productType);
+                };
                 
                 previewContainer.appendChild(productImage);
+
+                // Appliquer la couleur de fond si disponible
+                if (colorValue) {
+                    const hexColor = `#${colorValue}`;
+                    const colorOverlay = document.createElement('div');
+                    colorOverlay.className = 'color-overlay';
+                    colorOverlay.style.backgroundColor = hexColor;
+                    previewContainer.appendChild(colorOverlay);
+                }
 
                 // Ajouter le texte personnalisé s'il existe
                 if (customText) {
@@ -544,23 +581,59 @@
                     textElement.style.fontFamily = fontFamily || 'Arial';
                     textElement.style.left = '50%';
                     textElement.style.top = '60%';
+                    
+                    // Appliquer la couleur du texte si disponible
+                    if (textColorValue) {
+                        textElement.style.color = `#${textColorValue}`;
+                    }
+                    
                     previewContainer.appendChild(textElement);
                 }
-
-                // Ici vous pourriez aussi ajouter le logo si disponible
             }
 
-            function displayCustomizationDetails(colorValue, customText, fontFamily) {
+            function getProductImage(imagePath, productType) {
+                // Si un chemin d'image est fourni, l'utiliser
+                if (imagePath) {
+                    return decodeURIComponent(imagePath);
+                }
+                
+                // Sinon, utiliser une image par défaut selon le type de produit
+                return getDefaultProductImage(productType);
+            }
+
+            function getDefaultProductImage(productType) {
+                // Retourne une image par défaut en fonction du type de produit
+                switch(productType.toLowerCase()) {
+                    case 't-shirt':
+                        return 'assets/textile_white.png';
+                    case 'sweat':
+                        return 'assets/sweat.png';
+                    case 'casquette':
+                        return 'assets/cap.png';
+                    case 'parapluie':
+                        return 'assets/paraplui.png';
+                    case 'stylo':
+                        return 'assets/stylo.png';
+                    case 'carnet':
+                        return 'assets/carnet.png';
+                    case 'mug':
+                        return 'assets/mug.png';
+                    default:
+                        return 'assets/default_product.png';
+                }
+            }
+
+            function displayCustomizationDetails(colorValue, customText, fontFamily, textColorValue) {
                 const detailsContainer = document.getElementById('customization-details');
                 
                 let html = '<h3>Personnalisation</h3>';
                 
                 // Couleur
                 if (colorValue) {
-                    const colorHex = `#${parseInt(colorValue).toString(16).substring(2)}`;
+                    const colorHex = `#${colorValue}`;
                     html += `
                         <div class="detail-item">
-                            <span class="detail-label">Couleur:</span>
+                            <span class="detail-label">Couleur produit:</span>
                             <span>
                                 <span class="color-sample" style="background-color: ${colorHex};"></span>
                                 ${getColorName(colorHex)}
@@ -582,24 +655,23 @@
                             <span style="font-family: ${fontFamily || 'Arial'}">${fontFamily || 'Arial'}</span>
                         </div>
                     `;
+                    
+                    // Couleur du texte
+                    if (textColorValue) {
+                        const textColorHex = `#${textColorValue}`;
+                        html += `
+                            <div class="detail-item">
+                                <span class="detail-label">Couleur texte:</span>
+                                <span>
+                                    <span class="color-sample" style="background-color: ${textColorHex};"></span>
+                                    ${getColorName(textColorHex)}
+                                </span>
+                            </div>
+                        `;
+                    }
                 }
 
                 detailsContainer.innerHTML = html;
-            }
-
-            function getProductImage(productType) {
-                // Retourne une image par défaut en fonction du type de produit
-                // En production, vous utiliseriez les vraies images
-                switch(productType.toLowerCase()) {
-                    case 't-shirt':
-                        return 'https://via.placeholder.com/300x400/ffffff?text=T-shirt';
-                    case 'sweat':
-                        return 'https://via.placeholder.com/300x400/ffffff?text=Sweat';
-                    case 'casquette':
-                        return 'https://via.placeholder.com/300x300/ffffff?text=Casquette';
-                    default:
-                        return 'https://via.placeholder.com/300x400/ffffff?text=Produit';
-                }
             }
 
             function getColorName(colorHex) {
@@ -710,6 +782,14 @@
                     paymentStep.classList.add('completed');
                     paymentStep.querySelector('.status').className = 'status status-completed';
                     paymentStep.querySelector('.status').textContent = 'Terminé';
+                    
+                    // Créer un élément date s'il n'existe pas
+                    if (!paymentStep.querySelector('.step-date')) {
+                        const dateElement = document.createElement('p');
+                        dateElement.className = 'step-date';
+                        paymentStep.querySelector('.step-content').appendChild(dateElement);
+                    }
+                    
                     paymentStep.querySelector('.step-date').textContent = formatDateTime(new Date());
                 }
             }
