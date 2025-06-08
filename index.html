@@ -5,30 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paiement et Suivi | UniqMaker</title>
     <meta name="description" content="Paiement sécurisé et suivi de votre commande personnalisée">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <style>
         :root {
-            --primary: #2a5bd7;
-            --primary-dark: #1e4bbd;
-            --secondary: #ff6b00;
-            --success: #28a745;
-            --danger: #dc3545;
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --primary-dark: #3a0ca3;
+            --secondary: #f72585;
+            --accent: #4cc9f0;
+            --success: #38b000;
+            --warning: #ffaa00;
+            --danger: #ef233c;
             --light: #f8f9fa;
+            --light-gray: #e9ecef;
+            --medium-gray: #adb5bd;
             --dark: #212529;
-            --gray: #6c757d;
             --stripe: #635bff;
             --paypal: #003087;
+            --paypal-light: #009cde;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.05);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --border-radius: 12px;
+            --border-radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Poppins', sans-serif;
             line-height: 1.6;
             color: var(--dark);
-            background-color: #f5f7fa;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            color: var(--dark);
         }
 
         .main-container {
@@ -36,28 +61,57 @@
             flex-direction: column;
             align-items: center;
             padding: 2rem 1rem;
+            min-height: 100vh;
         }
 
         .container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
             background: white;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--border-radius);
             margin-bottom: 2rem;
             overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .container:hover {
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
         }
 
         .header-section {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
-            padding: 2rem;
+            padding: 2.5rem 2rem;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-section::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+            z-index: 1;
         }
 
         .header-section h1 {
             margin: 0 0 0.5rem 0;
-            font-size: 2rem;
+            font-size: 2.2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
         }
 
         .content-section {
@@ -67,50 +121,73 @@
 
         .payment-section, .tracking-section {
             flex: 1;
-            min-width: 300px;
-            padding: 2rem;
+            min-width: 320px;
+            padding: 2.5rem;
         }
 
         .payment-section {
-            border-right: 1px solid var(--light);
+            border-right: 1px solid var(--light-gray);
         }
 
         .section-title {
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
+            color: var(--primary-dark);
+            margin-bottom: 1.8rem;
+            font-size: 1.6rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            position: relative;
+            padding-bottom: 0.8rem;
+        }
+
+        .section-title::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
         }
 
         .section-title i {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
+            color: var(--primary);
         }
 
         .order-summary {
             background: var(--light);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
+            padding: 1.8rem;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--light-gray);
         }
 
         .summary-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 0.8rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px dashed var(--light-gray);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
         }
 
         .summary-total {
             font-weight: 700;
-            font-size: 1.2rem;
-            border-top: 1px solid #ddd;
-            padding-top: 0.8rem;
-            margin-top: 0.8rem;
+            font-size: 1.3rem;
+            border-top: 2px solid var(--primary-light);
+            padding-top: 1rem;
+            margin-top: 1rem;
+            color: var(--primary-dark);
         }
 
         .payment-methods {
-            margin-top: 2rem;
+            margin-top: 2.5rem;
         }
 
         .payment-btn {
@@ -118,23 +195,45 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            padding: 1rem;
-            margin-bottom: 1rem;
+            padding: 1.2rem;
+            margin-bottom: 1.2rem;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--border-radius-sm);
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: var(--transition);
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .payment-btn:hover::after {
+            left: 100%;
         }
 
         .payment-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .payment-btn:active {
+            transform: translateY(0);
         }
 
         .payment-btn i {
-            margin-right: 10px;
-            font-size: 1.2rem;
+            margin-right: 12px;
+            font-size: 1.4rem;
         }
 
         .stripe-btn {
@@ -143,13 +242,14 @@
         }
 
         .paypal-btn {
-            background: #ffc439;
+            background: linear-gradient(135deg, #ffc439 0%, #f2b600 100%);
             color: var(--paypal);
         }
 
         .bank-btn {
-            background: var(--light);
+            background: linear-gradient(135deg, var(--light) 0%, var(--light-gray) 100%);
             color: var(--dark);
+            border: 1px solid var(--medium-gray);
         }
 
         .secure-payment {
@@ -157,27 +257,30 @@
             align-items: center;
             justify-content: center;
             margin-top: 2rem;
-            font-size: 0.9rem;
-            color: var(--gray);
+            font-size: 0.95rem;
+            color: var(--medium-gray);
+            gap: 8px;
         }
 
         .secure-payment i {
             color: var(--success);
-            margin-right: 8px;
+            font-size: 1.2rem;
         }
 
         /* Styles pour la partie suivi de commande */
         .order-info {
             background: var(--light);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
+            padding: 1.8rem;
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 2.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--light-gray);
         }
 
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
         }
 
         .info-item {
@@ -185,21 +288,23 @@
         }
 
         .info-label {
-            font-size: 0.9rem;
-            color: var(--gray);
-            margin-bottom: 0.3rem;
+            font-size: 0.95rem;
+            color: var(--medium-gray);
+            margin-bottom: 0.4rem;
             display: block;
+            font-weight: 500;
         }
 
         .info-value {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
+            color: var(--dark);
         }
 
         .timeline {
             position: relative;
-            margin: 2rem 0;
-            padding-left: 2rem;
+            margin: 2.5rem 0;
+            padding-left: 2.5rem;
         }
 
         .timeline::before {
@@ -207,34 +312,44 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            left: 20px;
-            width: 2px;
-            background: var(--light);
+            left: 30px;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--primary-light), var(--accent));
+            border-radius: 3px;
         }
 
         .step {
             position: relative;
-            margin-bottom: 2rem;
-            padding-left: 2rem;
+            margin-bottom: 2.5rem;
+            padding-left: 2.5rem;
+            transition: var(--transition);
+        }
+
+        .step:hover {
+            transform: translateX(5px);
         }
 
         .step-circle {
             position: absolute;
             left: 0;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: var(--light);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
+            font-weight: 700;
             z-index: 2;
+            box-shadow: var(--shadow-sm);
+            border: 3px solid white;
+            transition: var(--transition);
         }
 
         .step.active .step-circle {
             background: var(--primary);
             color: white;
+            transform: scale(1.1);
         }
 
         .step.completed .step-circle {
@@ -243,28 +358,53 @@
         }
 
         .step-content {
-            padding: 1rem;
+            padding: 1.5rem;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border-left: 4px solid var(--light-gray);
+        }
+
+        .step.active .step-content {
+            border-left-color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        .step.completed .step-content {
+            border-left-color: var(--success);
         }
 
         .step h3 {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.6rem;
+            color: var(--dark);
         }
 
         .step-date {
+            font-size: 0.95rem;
+            color: var(--medium-gray);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-date i {
             font-size: 0.9rem;
-            color: var(--gray);
         }
 
         .status {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 1rem;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-top: 0.5rem;
+            margin-top: 0.8rem;
+            gap: 6px;
+        }
+
+        .status i {
+            font-size: 0.8rem;
         }
 
         .status-pending {
@@ -284,37 +424,87 @@
 
         .error-container {
             text-align: center;
-            padding: 2rem;
+            padding: 2.5rem;
         }
 
         .error-container h2 {
             color: var(--danger);
+            margin-bottom: 1.5rem;
         }
 
         .btn {
-            display: inline-block;
-            padding: 0.8rem 1.5rem;
-            background: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.9rem 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 50px;
             font-weight: 600;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--light), var(--light-gray));
+            color: var(--dark);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #c1121f);
+            box-shadow: 0 4px 15px rgba(239, 35, 60, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 8px 25px rgba(239, 35, 60, 0.4);
+        }
+
+        .product-preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2.5rem;
         }
 
         .product-preview {
             position: relative;
             width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            max-width: 320px;
+            margin: 0 auto 1.5rem;
+            border: 1px solid var(--light-gray);
+            border-radius: var(--border-radius-sm);
             overflow: hidden;
             background-color: white;
             aspect-ratio: 3/4;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .product-preview:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
         }
 
         .product-base {
@@ -328,11 +518,16 @@
         .product-text {
             position: absolute;
             transform: translate(-50%, -50%);
-            padding: 8px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 4px;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
             font-weight: bold;
             z-index: 3;
+            backdrop-filter: blur(2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 80%;
+            word-break: break-word;
         }
 
         .product-logo {
@@ -341,6 +536,8 @@
             height: 100px;
             transform: translate(-50%, -50%);
             z-index: 2;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
 
         .color-overlay {
@@ -356,27 +553,164 @@
 
         .customization-details {
             margin-top: 2rem;
-            padding: 1rem;
+            padding: 1.5rem;
             background: var(--light);
-            border-radius: 8px;
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--light-gray);
+        }
+
+        .customization-details h3 {
+            margin-bottom: 1.2rem;
+            color: var(--primary-dark);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .customization-details h3 i {
+            color: var(--primary);
         }
 
         .detail-item {
-            margin-bottom: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px dashed var(--light-gray);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
         }
 
         .detail-label {
             font-weight: 600;
             margin-right: 0.5rem;
+            color: var(--dark);
+            min-width: 120px;
+        }
+
+        .detail-value {
+            flex: 1;
         }
 
         .color-sample {
             display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 1px solid #000;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
             vertical-align: middle;
-            margin-right: 5px;
+            margin-right: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .font-sample {
+            font-size: 1.1rem;
+            margin-left: 5px;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--primary-dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--medium-gray);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            .payment-section, .tracking-section {
+                padding: 2rem;
+            }
         }
 
         @media (max-width: 768px) {
@@ -386,25 +720,101 @@
             
             .payment-section {
                 border-right: none;
-                border-bottom: 1px solid var(--light);
+                border-bottom: 1px solid var(--light-gray);
             }
             
             .container {
-                margin: 0 0 1rem 0;
+                margin: 0 0 1.5rem 0;
             }
+
+            .header-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+            }
+
+            .payment-section, .tracking-section {
+                padding: 1.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-container {
+                padding: 1.5rem 0.5rem;
+            }
+
+            .header-section {
+                padding: 2rem 1rem;
+            }
+
+            .payment-section, .tracking-section {
+                padding: 1.5rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .product-preview {
+                max-width: 280px;
+            }
+        }
+
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Progress bar */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: var(--light-gray);
+            border-radius: 3px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px;
+            transition: width 0.4s ease;
         }
     </style>
 </head>
 <body>
     <div class="main-container">
-        <div class="container">
+        <div class="container slide-up">
             <div class="header-section">
                 <h1><i class="fas fa-check-circle"></i> Votre commande est prête</h1>
                 <p>Paiement sécurisé et suivi en temps réel</p>
             </div>
             
             <div class="content-section">
-                <div class="payment-section">
+                <div class="payment-section fade-in">
                     <h2 class="section-title"><i class="fas fa-credit-card"></i> Paiement sécurisé</h2>
                     
                     <div class="order-summary">
@@ -434,8 +844,10 @@
                         </div>
                     </div>
 
-                    <div class="product-preview" id="product-preview">
-                        <!-- Produit sera généré dynamiquement -->
+                    <div class="product-preview-container">
+                        <div class="product-preview" id="product-preview">
+                            <!-- Produit sera généré dynamiquement -->
+                        </div>
                     </div>
 
                     <div class="customization-details" id="customization-details">
@@ -459,7 +871,7 @@
                     </div>
                 </div>
                 
-                <div class="tracking-section">
+                <div class="tracking-section fade-in">
                     <h2 class="section-title"><i class="fas fa-truck"></i> Suivi de commande</h2>
                     
                     <div id="tracking-container">
@@ -473,6 +885,13 @@
                                     <span class="info-label">Date</span>
                                     <span class="info-value" id="order-date">Chargement...</span>
                                 </div>
+                                <div class="info-item">
+                                    <span class="info-label">Statut</span>
+                                    <span class="info-value" id="order-status">En attente de paiement</span>
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="order-progress" style="width: 20%"></div>
                             </div>
                         </div>
                         
@@ -485,40 +904,94 @@
         </div>
     </div>
 
+    <!-- Modal pour les détails bancaires -->
+    <div class="modal-overlay" id="bank-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-university"></i> Paiement par virement</h3>
+                <button class="modal-close" id="close-bank-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="bank-modal-body">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="copy-bank-details">
+                    <i class="far fa-copy"></i> Copier les informations
+                </button>
+                <button class="btn" id="close-bank-modal-btn">
+                    <i class="fas fa-check"></i> Compris
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmation de paiement -->
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="payment-modal-title"><i class="fas fa-credit-card"></i> Paiement</h3>
+                <button class="modal-close" id="close-payment-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="payment-modal-body">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="confirm-payment-modal-btn">
+                    <i class="fas fa-check"></i> Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialisation
             const urlParams = new URLSearchParams(window.location.search);
-            const orderId = urlParams.get('id');
-            const amount = urlParams.get('amount');
-            const product = urlParams.get('product');
+            const orderId = urlParams.get('id') || 'CMD-' + Math.floor(100000 + Math.random() * 900000);
+            const amount = urlParams.get('amount') || '49.99';
+            const product = urlParams.get('product') || 'T-shirt personnalisé';
             const productType = urlParams.get('type') || 'T-shirt';
             const quantity = urlParams.get('quantity') || 1;
-            const color = urlParams.get('color');
-            const textColor = urlParams.get('textColor');
-            const text = urlParams.get('text');
-            const font = urlParams.get('font');
+            const color = urlParams.get('color') || '000000';
+            const textColor = urlParams.get('textColor') || 'FFFFFF';
+            const text = urlParams.get('text') || 'Mon texte';
+            const font = urlParams.get('font') || 'Arial';
             const image = urlParams.get('image');
 
-            if (!orderId) {
-                showError("Lien invalide", "Merci d'utiliser le lien fourni dans votre email de confirmation");
-                return;
+            // Initialiser les modales
+            const bankModal = document.getElementById('bank-modal');
+            const paymentModal = document.getElementById('payment-modal');
+            const closeBankModal = document.getElementById('close-bank-modal');
+            const closeBankModalBtn = document.getElementById('close-bank-modal-btn');
+            const closePaymentModal = document.getElementById('close-payment-modal');
+            const confirmPaymentBtn = document.getElementById('confirm-payment-modal-btn');
+            const copyBankDetailsBtn = document.getElementById('copy-bank-details');
+
+            // Gestion des modales
+            function openModal(modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
             }
+
+            function closeModal(modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            closeBankModal.addEventListener('click', () => closeModal(bankModal));
+            closeBankModalBtn.addEventListener('click', () => closeModal(bankModal));
+            closePaymentModal.addEventListener('click', () => closeModal(paymentModal));
 
             // Mettre à jour les informations de la commande
             document.getElementById('order-id').textContent = orderId;
-            
-            if (product) {
-                document.getElementById('product-name').textContent = decodeURIComponent(product);
-            }
-
+            document.getElementById('product-name').textContent = decodeURIComponent(product);
             document.getElementById('product-type').textContent = productType;
             document.getElementById('product-quantity').textContent = quantity;
             
-            if (amount) {
-                const numericAmount = parseFloat(amount);
-                document.getElementById('subtotal').textContent = numericAmount.toFixed(2) + ' €';
-                document.getElementById('total-amount').textContent = numericAmount.toFixed(2) + ' €';
-            }
+            const numericAmount = parseFloat(amount);
+            document.getElementById('subtotal').textContent = numericAmount.toFixed(2) + ' €';
+            document.getElementById('total-amount').textContent = numericAmount.toFixed(2) + ' €';
 
             // Date actuelle
             const now = new Date();
@@ -546,6 +1019,13 @@
                 showBankDetails(orderId, amount);
             });
 
+            copyBankDetailsBtn.addEventListener('click', copyBankDetailsToClipboard);
+
+            confirmPaymentBtn.addEventListener('click', function() {
+                simulatePaymentSuccess();
+            });
+
+            // Fonctions principales
             function generateProductPreview(colorValue, customText, fontFamily, textColorValue, imagePath, productType) {
                 const previewContainer = document.getElementById('product-preview');
                 previewContainer.innerHTML = ''; // Nettoyer le conteneur
@@ -603,26 +1083,25 @@
 
             function getDefaultProductImage(productType) {
                 // Retourne une image par défaut en fonction du type de produit
-                switch(productType.toLowerCase()) {
-                    case 't-shirt':
-                        return 'assets/textile_white.png';
-                    case 'parapluie':
-                        return 'assets/paraplui.png';
-                    case 'stylo':
-                        return 'assets/stylo.png';
-                    case 'carnet':
-                        return 'assets/carnet.png';
-                    case 'mug':
-                        return 'assets/mug.png';
-                    default:
-                        return 'assets/textile_white.png';
-                }
+                const productImages = {
+                    't-shirt': 'https://cdn.pixabay.com/photo/2016/12/06/09/30/blank-1886008_640.png',
+                    'parapluie': 'https://cdn.pixabay.com/photo/2013/07/13/01/22/umbrella-155165_640.png',
+                    'stylo': 'https://cdn.pixabay.com/photo/2017/01/31/11/30/ballpoint-pen-2024738_640.png',
+                    'carnet': 'https://cdn.pixabay.com/photo/2015/11/19/21/14/notebook-1052014_640.jpg',
+                    'mug': 'https://cdn.pixabay.com/photo/2015/05/15/14/45/coffee-cup-768771_640.jpg',
+                    'casquette': 'https://cdn.pixabay.com/photo/2015/04/23/22/00/tree-736885_640.jpg'
+                };
+                
+                const normalizedType = productType.toLowerCase();
+                return productImages[normalizedType] || productImages['t-shirt'];
             }
 
             function displayCustomizationDetails(colorValue, customText, fontFamily, textColorValue) {
                 const detailsContainer = document.getElementById('customization-details');
                 
-                let html = '<h3>Personnalisation</h3>';
+                let html = `
+                    <h3><i class="fas fa-palette"></i> Personnalisation</h3>
+                `;
                 
                 // Couleur
                 if (colorValue) {
@@ -630,9 +1109,10 @@
                     html += `
                         <div class="detail-item">
                             <span class="detail-label">Couleur produit:</span>
-                            <span>
+                            <span class="detail-value">
                                 <span class="color-sample" style="background-color: ${colorHex};"></span>
                                 ${getColorName(colorHex)}
+                                <span style="color: ${colorHex}">${colorHex}</span>
                             </span>
                         </div>
                     `;
@@ -643,12 +1123,15 @@
                     const decodedText = decodeURIComponent(customText);
                     html += `
                         <div class="detail-item">
-                            <span class="detail-label">Texte:</span>
-                            <span>${decodedText}</span>
+                            <span class="detail-label">Texte personnalisé:</span>
+                            <span class="detail-value">"${decodedText}"</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Police:</span>
-                            <span style="font-family: ${fontFamily || 'Arial'}">${fontFamily || 'Arial'}</span>
+                            <span class="detail-value">
+                                ${fontFamily || 'Arial'}
+                                <span class="font-sample" style="font-family: '${fontFamily || 'Arial'}'">(Exemple)</span>
+                            </span>
                         </div>
                     `;
                     
@@ -658,9 +1141,10 @@
                         html += `
                             <div class="detail-item">
                                 <span class="detail-label">Couleur texte:</span>
-                                <span>
+                                <span class="detail-value">
                                     <span class="color-sample" style="background-color: ${textColorHex};"></span>
                                     ${getColorName(textColorHex)}
+                                    <span style="color: ${textColorHex}">${textColorHex}</span>
                                 </span>
                             </div>
                         `;
@@ -679,12 +1163,25 @@
                     '#007a30': 'Vert',
                     '#0038a8': 'Bleu',
                     '#6d3b8e': 'Violet',
-                    '#ff6b00': 'Orange'
+                    '#ff6b00': 'Orange',
+                    '#f72585': 'Rose',
+                    '#4cc9f0': 'Bleu clair',
+                    '#4361ee': 'Bleu roi',
+                    '#3a0ca3': 'Bleu foncé'
                 };
                 return colors[colorHex.toLowerCase()] || colorHex;
             }
 
             function initializeTimeline(orderId) {
+                // Afficher un indicateur de chargement
+                const timelineContainer = document.getElementById('order-timeline');
+                timelineContainer.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <div class="spinner" style="width: 40px; height: 40px; border-width: 4px;"></div>
+                        <p style="margin-top: 1rem;">Chargement du suivi de commande...</p>
+                    </div>
+                `;
+                
                 fetchOrderData(orderId)
                     .then(orderData => {
                         if (orderData.error) {
@@ -692,28 +1189,57 @@
                             return;
                         }
                         renderTimeline(orderData);
+                        updateOrderStatusDisplay(orderData.status);
                     })
                     .catch(error => {
                         console.error("Erreur de chargement:", error);
+                        showToast("Une erreur s'est produite lors du chargement du suivi", "error");
                     });
             }
 
             async function fetchOrderData(orderId) {
-                // Simuler un appel API
+                // Simuler un appel API avec délai
                 return new Promise(resolve => {
                     setTimeout(() => {
+                        const steps = [
+                            { 
+                                id: 1, 
+                                name: "Devis créé", 
+                                date: new Date(Date.now() - 86400000), // Hier
+                                complete: true 
+                            },
+                            { 
+                                id: 2, 
+                                name: "Paiement", 
+                                date: null, 
+                                complete: false 
+                            },
+                            { 
+                                id: 3, 
+                                name: "En préparation", 
+                                date: null, 
+                                complete: false 
+                            },
+                            { 
+                                id: 4, 
+                                name: "Expédié", 
+                                date: null, 
+                                complete: false 
+                            },
+                            { 
+                                id: 5, 
+                                name: "Livré", 
+                                date: null, 
+                                complete: false 
+                            }
+                        ];
+                        
                         resolve({
                             id: orderId,
                             status: "pending_payment",
-                            steps: [
-                                { id: 1, name: "Devis créé", date: new Date(), complete: true },
-                                { id: 2, name: "Paiement", date: null, complete: false },
-                                { id: 3, name: "En préparation", date: null, complete: false },
-                                { id: 4, name: "Expédié", date: null, complete: false },
-                                { id: 5, name: "Livré", date: null, complete: false }
-                            ]
+                            steps: steps
                         });
-                    }, 500);
+                    }, 1500);
                 });
             }
 
@@ -725,8 +1251,9 @@
                         <div class="step-circle">${step.id}</div>
                         <div class="step-content">
                             <h3>${escapeHtml(step.name)}</h3>
-                            ${step.date ? `<p class="step-date">${formatDateTime(step.date)}</p>` : ''}
+                            ${step.date ? `<p class="step-date"><i class="far fa-calendar-alt"></i> ${formatDateTime(step.date)}</p>` : ''}
                             <span class="status ${getStatusClass(step, orderData)}">
+                                <i class="fas ${getStatusIcon(step, orderData)}"></i>
                                 ${getStatusText(step, orderData)}
                             </span>
                         </div>
@@ -734,50 +1261,145 @@
                 `).join('');
             }
 
+            function updateOrderStatusDisplay(status) {
+                const statusTexts = {
+                    'pending_payment': 'En attente de paiement',
+                    'paid': 'Paiement reçu',
+                    'processing': 'En préparation',
+                    'shipped': 'Expédié',
+                    'delivered': 'Livré',
+                    'cancelled': 'Annulé'
+                };
+                
+                const progressValues = {
+                    'pending_payment': 20,
+                    'paid': 40,
+                    'processing': 60,
+                    'shipped': 80,
+                    'delivered': 100,
+                    'cancelled': 0
+                };
+                
+                document.getElementById('order-status').textContent = statusTexts[status] || status;
+                document.getElementById('order-progress').style.width = `${progressValues[status] || 0}%`;
+            }
+
             function processPayment(method, orderId, amount) {
+                // Désactiver les boutons pendant le traitement
+                const buttons = document.querySelectorAll('.payment-btn');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.innerHTML = `<span class="spinner"></span> Traitement...`;
+                });
+                
                 // Simuler un processus de paiement
-                alert(`Redirection vers le paiement ${method} pour la commande ${orderId} (${amount} €)`);
-                
-                // En production, vous utiliseriez l'API de Stripe/PayPal ici
-                // window.location.href = `https://api.yourapp.com/pay/${method}?order=${orderId}&amount=${amount}`;
-                
-                // Simulation de paiement réussi
                 setTimeout(() => {
-                    updateOrderStatus(orderId, 'paid');
-                }, 2000);
+                    // Réactiver les boutons
+                    buttons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.innerHTML = `
+                            <i class="fab ${method === 'stripe' ? 'fa-cc-stripe' : 'fa-cc-paypal'}"></i> 
+                            Payer ${method === 'stripe' ? 'par carte' : 'avec PayPal'}
+                        `;
+                    });
+                    
+                    // Afficher la modale de confirmation
+                    showPaymentModal(method, orderId, amount);
+                }, 1000);
+            }
+
+            function showPaymentModal(method, orderId, amount) {
+                const modalTitle = document.getElementById('payment-modal-title');
+                const modalBody = document.getElementById('payment-modal-body');
+                
+                if (method === 'stripe') {
+                    modalTitle.innerHTML = `<i class="fab fa-cc-stripe"></i> Paiement par carte`;
+                    modalBody.innerHTML = `
+                        <p>Vous allez être redirigé vers notre plateforme de paiement sécurisée Stripe pour finaliser votre paiement de <strong>${amount} €</strong>.</p>
+                        <div style="margin: 1.5rem 0; text-align: center;">
+                            <i class="fab fa-cc-stripe" style="font-size: 3rem; color: var(--stripe);"></i>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--medium-gray);">
+                            <i class="fas fa-lock"></i> Transactions sécurisées - Aucune information bancaire n'est stockée sur nos serveurs.
+                        </p>
+                    `;
+                } else {
+                    modalTitle.innerHTML = `<i class="fab fa-cc-paypal"></i> Paiement PayPal`;
+                    modalBody.innerHTML = `
+                        <p>Vous allez être redirigé vers PayPal pour finaliser votre paiement de <strong>${amount} €</strong>.</p>
+                        <div style="margin: 1.5rem 0; text-align: center;">
+                            <i class="fab fa-cc-paypal" style="font-size: 3rem; color: var(--paypal);"></i>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--medium-gray);">
+                            <i class="fas fa-lock"></i> Transactions sécurisées - Vous pouvez payer avec votre compte PayPal ou par carte.
+                        </p>
+                    `;
+                }
+                
+                openModal(paymentModal);
+            }
+
+            function simulatePaymentSuccess() {
+                closeModal(paymentModal);
+                
+                // Afficher un message de succès
+                showToast("Paiement simulé avec succès!", "success");
+                
+                // Mettre à jour le statut de la commande
+                updateOrderStatus(orderId, 'paid');
             }
 
             function showBankDetails(orderId, amount) {
-                const bankInfo = `
-                    <h3>Virement bancaire</h3>
+                const modalBody = document.getElementById('bank-modal-body');
+                
+                modalBody.innerHTML = `
                     <p>Pour payer par virement, utilisez les informations suivantes :</p>
-                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <div style="background: var(--light); padding: 1.5rem; border-radius: var(--border-radius-sm); margin: 1.5rem 0;">
                         <p><strong>Bénéficiaire:</strong> UNIQMAKER</p>
                         <p><strong>IBAN:</strong> FR76 3000 4000 5000 6000 7000 123</p>
                         <p><strong>BIC:</strong> BNPAFRPPXXX</p>
                         <p><strong>Montant:</strong> ${amount} €</p>
                         <p><strong>Référence:</strong> ${orderId}</p>
                     </div>
-                    <p>Votre commande sera traitée dès réception du paiement.</p>
+                    <p>Votre commande sera traitée dès réception du paiement. Le délai de traitement peut prendre 2 à 3 jours ouvrés.</p>
+                    <p style="font-size: 0.9rem; color: var(--medium-gray); margin-top: 1rem;">
+                        <i class="fas fa-info-circle"></i> Merci d'envoyer une copie du virement à <a href="mailto:compta@uniqmaker.com">compta@uniqmaker.com</a> pour accélérer le traitement.
+                    </p>
                 `;
                 
-                alertWithHtml(bankInfo);
+                openModal(bankModal);
+            }
+
+            function copyBankDetailsToClipboard() {
+                const bankDetails = `
+                    Bénéficiaire: UNIQMAKER
+                    IBAN: FR76 3000 4000 5000 6000 7000 123
+                    BIC: BNPAFRPPXXX
+                    Montant: ${amount} €
+                    Référence: ${orderId}
+                `;
+                
+                navigator.clipboard.writeText(bankDetails).then(() => {
+                    showToast("Informations bancaires copiées!", "success");
+                }).catch(err => {
+                    console.error('Erreur lors de la copie:', err);
+                    showToast("Échec de la copie", "error");
+                });
             }
 
             function updateOrderStatus(orderId, status) {
                 // Simuler une mise à jour du statut
                 console.log(`Mise à jour du statut de la commande ${orderId} à ${status}`);
                 
-                // En production, vous feriez une requête à votre API
-                // fetch(`/api/orders/${orderId}/status`, { method: 'POST', body: { status } });
-                
                 // Mettre à jour l'affichage
                 const paymentStep = document.querySelector('.step:nth-child(2)');
                 if (paymentStep) {
                     paymentStep.classList.remove('active');
                     paymentStep.classList.add('completed');
-                    paymentStep.querySelector('.status').className = 'status status-completed';
-                    paymentStep.querySelector('.status').textContent = 'Terminé';
+                    
+                    const statusElement = paymentStep.querySelector('.status');
+                    statusElement.className = 'status status-completed';
+                    statusElement.innerHTML = '<i class="fas fa-check-circle"></i> Terminé';
                     
                     // Créer un élément date s'il n'existe pas
                     if (!paymentStep.querySelector('.step-date')) {
@@ -786,7 +1408,20 @@
                         paymentStep.querySelector('.step-content').appendChild(dateElement);
                     }
                     
-                    paymentStep.querySelector('.step-date').textContent = formatDateTime(new Date());
+                    const now = new Date();
+                    paymentStep.querySelector('.step-date').innerHTML = `<i class="far fa-calendar-alt"></i> ${formatDateTime(now)}`;
+                    
+                    // Mettre à jour le statut global
+                    updateOrderStatusDisplay(status);
+                    
+                    // Activer l'étape suivante
+                    const nextStep = document.querySelector('.step:nth-child(3)');
+                    if (nextStep) {
+                        nextStep.classList.add('active');
+                        const statusElement = nextStep.querySelector('.status');
+                        statusElement.className = 'status status-active';
+                        statusElement.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> En attente';
+                    }
                 }
             }
 
@@ -796,48 +1431,32 @@
                     <div class="error-container">
                         <h2>${title}</h2>
                         <p>${message}</p>
-                        <a href="mailto:contact@uniqmaker.com" class="btn">Nous contacter</a>
+                        <div style="margin-top: 1.5rem;">
+                            <a href="mailto:contact@uniqmaker.com" class="btn">
+                                <i class="fas fa-envelope"></i> Nous contacter
+                            </a>
+                            <a href="/" class="btn btn-secondary" style="margin-left: 1rem;">
+                                <i class="fas fa-home"></i> Retour à l'accueil
+                            </a>
+                        </div>
                     </div>
                 `;
             }
 
-            function alertWithHtml(html) {
-                const popup = document.createElement('div');
-                popup.style.position = 'fixed';
-                popup.style.top = '0';
-                popup.style.left = '0';
-                popup.style.width = '100%';
-                popup.style.height = '100%';
-                popup.style.backgroundColor = 'rgba(0,0,0,0.5)';
-                popup.style.display = 'flex';
-                popup.style.justifyContent = 'center';
-                popup.style.alignItems = 'center';
-                popup.style.zIndex = '1000';
+            function showToast(message, type = 'success') {
+                const backgroundColor = type === 'success' ? 'linear-gradient(to right, #00b09b, #96c93d)' : 
+                                      type === 'error' ? 'linear-gradient(to right, #ff416c, #ff4b2b)' : 
+                                      'linear-gradient(to right, #3a7bd5, #00d2ff)';
                 
-                const content = document.createElement('div');
-                content.style.backgroundColor = 'white';
-                content.style.padding = '2rem';
-                content.style.borderRadius = '8px';
-                content.style.maxWidth = '500px';
-                content.style.width = '90%';
-                content.innerHTML = html;
-                
-                const closeBtn = document.createElement('button');
-                closeBtn.textContent = 'Fermer';
-                closeBtn.style.marginTop = '1rem';
-                closeBtn.style.padding = '0.5rem 1rem';
-                closeBtn.style.backgroundColor = 'var(--primary)';
-                closeBtn.style.color = 'white';
-                closeBtn.style.border = 'none';
-                closeBtn.style.borderRadius = '4px';
-                closeBtn.style.cursor = 'pointer';
-                closeBtn.onclick = function() {
-                    document.body.removeChild(popup);
-                };
-                
-                content.appendChild(closeBtn);
-                popup.appendChild(content);
-                document.body.appendChild(popup);
+                Toastify({
+                    text: message,
+                    duration: 3000,
+                    close: true,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: backgroundColor,
+                    stopOnFocus: true,
+                }).showToast();
             }
 
             // Fonctions utilitaires
@@ -854,6 +1473,12 @@
                 if (step.complete) return 'status-completed';
                 if (step.id === 2 && orderData.status === 'pending_payment') return 'status-active';
                 return 'status-pending';
+            }
+
+            function getStatusIcon(step, orderData) {
+                if (step.complete) return 'fa-check-circle';
+                if (step.id === 2 && orderData.status === 'pending_payment') return 'fa-spinner fa-pulse';
+                return 'fa-clock';
             }
 
             function getStatusText(step, orderData) {
