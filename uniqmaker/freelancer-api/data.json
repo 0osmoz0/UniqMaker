@@ -43,5 +43,23 @@
     "dateNaissance": "12/11/98",
     "region": "Île-de-France",
     "profession": "En poste"
+  },
+  {
+    "prenom": "Romain",
+    "nom": "Ballard",
+    "email": "romain@gmail.com",
+    "motDePasse": "1234",
+    "dateNaissance": "12/11/90",
+    "region": "Île-de-France",
+    "profession": "En poste"
+  },
+  {
+    "prenom": "Mathis",
+    "nom": "lebel",
+    "email": "mathis@gmail.com",
+    "motDePasse": "12345",
+    "dateNaissance": "19/05/2004",
+    "region": "Île-de-France",
+    "profession": "Étudiant"
   }
 ]

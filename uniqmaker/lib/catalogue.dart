@@ -12,6 +12,8 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/animation.dart';
 import 'dart:ui' as ui;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 // 1. Thème personnalisé amélioré avec Material 3
 final ThemeData appTheme = ThemeData(
@@ -21,36 +23,21 @@ final ThemeData appTheme = ThemeData(
     secondary: const Color(0xFFFF6584),
     brightness: Brightness.light,
   ),
-  cardTheme: CardThemeData(
+  cardTheme: const CardThemeData(
     elevation: 1,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.all(Radius.circular(16)),
     ),
-    margin: const EdgeInsets.all(8),
-    surfaceTintColor: Colors.white,
+    clipBehavior: Clip.antiAlias, // Corrected parameter
+    color: Colors.white, // Replaced surfaceTintColor with color
   ),
-  textTheme: TextTheme(
-    displayLarge: TextStyle(
-      fontSize: 28,
-      fontWeight: FontWeight.bold,
-      color: Colors.grey[900],
-    ),
-    titleLarge: TextStyle(
-      fontSize: 22,
-      fontWeight: FontWeight.w600,
-      color: Colors.grey[800],
-    ),
-    bodyLarge: TextStyle(
-      fontSize: 16,
-      color: Colors.grey[700],
-    ),
-  ),
-  filledButtonTheme: FilledButtonThemeData(
-    style: FilledButton.styleFrom(
+  typography: Typography.material2021(), // Corrected textTheme to typography
+  elevatedButtonTheme: ElevatedButtonThemeData( // Corrected filledButtonTheme to elevatedButtonTheme
+    style: ElevatedButton.styleFrom(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24), // Removed unnecessary const
     ),
   ),
   inputDecorationTheme: InputDecorationTheme(
@@ -149,6 +136,8 @@ class ProductQuoteItem {
   final String? font;
   final File? customLogo;
   final String position;
+  final bool useSharedLogo;
+  final bool useSharedText;
 
   ProductQuoteItem({
     required this.productName,
@@ -163,19 +152,209 @@ class ProductQuoteItem {
     this.font,
     this.customLogo,
     required this.position,
+    this.useSharedLogo = false,
+    this.useSharedText = false,
   });
+
+  ProductQuoteItem copyWith({
+    String? productName,
+    String? productType,
+    Color? productColor,
+    String? imagePath,
+    double? basePrice,
+    Map<String, int>? sizeQuantities,
+    Map<String, double>? sizePrices,
+    String? customText,
+    Color? textColor,
+    String? font,
+    File? customLogo,
+    String? position,
+    bool? useSharedLogo,
+    bool? useSharedText,
+  }) {
+    return ProductQuoteItem(
+      productName: productName ?? this.productName,
+      productType: productType ?? this.productType,
+      productColor: productColor ?? this.productColor,
+      imagePath: imagePath ?? this.imagePath,
+      basePrice: basePrice ?? this.basePrice,
+      sizeQuantities: sizeQuantities ?? Map.from(this.sizeQuantities),
+      sizePrices: sizePrices ?? Map.from(this.sizePrices),
+      customText: customText ?? this.customText,
+      textColor: textColor ?? this.textColor,
+      font: font ?? this.font,
+      customLogo: customLogo ?? this.customLogo,
+      position: position ?? this.position,
+      useSharedLogo: useSharedLogo ?? this.useSharedLogo,
+      useSharedText: useSharedText ?? this.useSharedText,
+    );
+  }
 
   double get totalPrice {
     if (sizeQuantities.values.every((qty) => qty == 0)) return 0;
     
     final averageMultiplier = sizeQuantities.entries.fold(0.0, (sum, entry) {
-      return (sum as double) + (entry.value * sizePrices[entry.key]!);
+      return (sum as double? ?? 0.0) + (entry.value * sizePrices[entry.key]!);
     }) / totalQuantity;
     
     return basePrice * averageMultiplier * totalQuantity;
   }
 
   int get totalQuantity => sizeQuantities.values.reduce((a, b) => a + b);
+
+  bool get hasCustomization => customText != null || customLogo != null;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productName': productName,
+      'productType': productType,
+      'productColor': productColor.value,
+      'imagePath': imagePath,
+      'basePrice': basePrice,
+      'sizeQuantities': sizeQuantities,
+      'sizePrices': sizePrices,
+      'customText': customText,
+      'textColor': textColor?.value,
+      'font': font,
+      'customLogoPath': customLogo?.path,
+      'position': position,
+      'useSharedLogo': useSharedLogo,
+      'useSharedText': useSharedText,
+    };
+  }
+
+  factory ProductQuoteItem.fromJson(Map<String, dynamic> json) {
+    return ProductQuoteItem(
+      productName: json['productName'],
+      productType: json['productType'],
+      productColor: Color(json['productColor']),
+      imagePath: json['imagePath'],
+      basePrice: json['basePrice'],
+      sizeQuantities: Map<String, int>.from(json['sizeQuantities']),
+      sizePrices: Map<String, double>.from(json['sizePrices']),
+      customText: json['customText'],
+      textColor: json['textColor'] != null ? Color(json['textColor']) : null,
+      font: json['font'],
+      customLogo: json['customLogoPath'] != null ? File(json['customLogoPath']) : null,
+      position: json['position'],
+      useSharedLogo: json['useSharedLogo'] ?? false,
+      useSharedText: json['useSharedText'] ?? false,
+    );
+  }
+}
+
+class QuoteManager {
+  static final QuoteManager _instance = QuoteManager._internal();
+  factory QuoteManager() => _instance;
+  QuoteManager._internal();
+
+  final List<ProductQuoteItem> _items = [];
+  File? _sharedLogo;
+  String? _sharedText;
+  Color _sharedTextColor = Colors.black;
+  String _sharedFont = 'Roboto';
+
+  List<ProductQuoteItem> get items => List.unmodifiable(_items);
+  File? get sharedLogo => _sharedLogo;
+  String? get sharedText => _sharedText;
+  Color get sharedTextColor => _sharedTextColor;
+  String get sharedFont => _sharedFont;
+  double get totalPrice => _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+  int get totalQuantity => _items.fold(0, (sum, item) => sum + item.totalQuantity);
+
+  void addItem(ProductQuoteItem item) {
+    _items.add(item);
+    _updateSharedCustomizations(item);
+    _saveQuote();
+  }
+
+  void removeItem(int index) {
+    if (index >= 0 && index < _items.length) {
+      _items.removeAt(index);
+      _saveQuote();
+    }
+  }
+
+  void updateItem(int index, ProductQuoteItem newItem) {
+    if (index >= 0 && index < _items.length) {
+      _items[index] = newItem;
+      _updateSharedCustomizations(newItem);
+      _saveQuote();
+    }
+  }
+
+  void clearQuote() {
+    _items.clear();
+    _sharedLogo = null;
+    _sharedText = null;
+    _saveQuote();
+  }
+
+  void updateSharedLogo(File? logo) {
+    _sharedLogo = logo;
+    for (var item in _items) {
+      if (item.useSharedLogo) {
+        _items[_items.indexOf(item)] = item.copyWith(customLogo: logo);
+      }
+    }
+    _saveQuote();
+  }
+
+  void updateSharedText(String? text, {Color? color, String? font}) {
+    _sharedText = text;
+    if (color != null) _sharedTextColor = color;
+    if (font != null) _sharedFont = font;
+    
+    for (var item in _items) {
+      if (item.useSharedText) {
+        _items[_items.indexOf(item)] = item.copyWith(
+          customText: text,
+          textColor: color ?? item.textColor,
+          font: font ?? item.font,
+        );
+      }
+    }
+    _saveQuote();
+  }
+
+  Future<void> _saveQuote() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = jsonEncode({
+      'items': _items.map((item) => item.toJson()).toList(),
+      'sharedLogoPath': _sharedLogo?.path,
+      'sharedText': _sharedText,
+      'sharedTextColor': _sharedTextColor.value,
+      'sharedFont': _sharedFont,
+    });
+    await prefs.setString('currentQuote', json);
+  }
+
+  Future<void> loadQuote() async {
+    final prefs = await SharedPreferences.getInstance();
+    final json = prefs.getString('currentQuote');
+    if (json != null) {
+      final data = jsonDecode(json);
+      _items.clear();
+      _items.addAll((data['items'] as List).map((item) => ProductQuoteItem.fromJson(item)));
+      if (data['sharedLogoPath'] != null) {
+        _sharedLogo = File(data['sharedLogoPath']);
+      }
+      _sharedText = data['sharedText'];
+      _sharedTextColor = Color(data['sharedTextColor']);
+      _sharedFont = data['sharedFont'];
+    }
+  }
+
+  void _updateSharedCustomizations(ProductQuoteItem item) {
+    if (item.customLogo != null && _sharedLogo == null) {
+      _sharedLogo = item.customLogo;
+    }
+    if (item.customText != null && _sharedText == null) {
+      _sharedText = item.customText;
+      _sharedTextColor = item.textColor ?? Colors.black;
+      _sharedFont = item.font ?? 'Roboto';
+    }
+  }
 }
 
 // 3. Page Catalogue Principale améliorée
@@ -240,11 +419,13 @@ class _CataloguePageState extends State<CataloguePage> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            automaticallyImplyLeading: false,
             expandedHeight: 200,
             floating: true,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text('UniqMaker', 
+              title: Text(
+                'Catalogue',
                 style: TextStyle(
                   color: appTheme.colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
@@ -264,6 +445,13 @@ class _CataloguePageState extends State<CataloguePage> {
                 ),
               ),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {},
+              ),
+              const QuoteBadge(),
+            ],
           ),
           SliverPadding(
             padding: const EdgeInsets.all(16),
@@ -386,7 +574,7 @@ class _CataloguePageState extends State<CataloguePage> {
             ),
             TextButton(
               onPressed: () {},
-              child: Text('Voir tout'),
+              child: const Text('Voir tout'),
             ),
           ],
         ),
@@ -1001,8 +1189,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     'XXL': 0,
   };
 
-  // Gestion du devis multi-produits
-  static final MultiProductQuote currentQuote = MultiProductQuote();
+  final QuoteManager _quoteManager = QuoteManager();
   
   int get _totalQuantity => _sizeQuantities.values.reduce((a, b) => a + b);
   
@@ -1047,6 +1234,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     _controller.forward();
     _initializePositions();
     _adaptPositionsForProductType();
+    _quoteManager.loadQuote();
   }
 
   @override
@@ -1936,7 +2124,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  currentQuote.items.isEmpty ? "Total" : "Total partiel",
+                  _quoteManager.items.isEmpty ? "Total" : "Total partiel",
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 Text(
@@ -1946,9 +2134,9 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                         color: appTheme.colorScheme.primary,
                       ),
                 ),
-                if (currentQuote.items.isNotEmpty)
+                if (_quoteManager.items.isNotEmpty)
                   Text(
-                    "Total global: ${currentQuote.totalPrice.toStringAsFixed(2)}€",
+                    "Total global: ${_quoteManager.totalPrice.toStringAsFixed(2)}€",
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
               ],
@@ -1975,7 +2163,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     ),
                     child: Text(
-                      currentQuote.items.isEmpty ? "Demander un devis" : "Voir le devis",
+                      _quoteManager.items.isEmpty ? "Demander un devis" : "Voir le devis",
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -2266,13 +2454,11 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     );
 
     setState(() {
-      currentQuote.addItem(newItem);
+      _quoteManager.addItem(newItem);
       // Sauvegarder le logo et texte pour réutilisation
-      if (_customLogo != null) currentQuote.sharedLogo = _customLogo;
+      if (_customLogo != null) _quoteManager.updateSharedLogo(_customLogo);
       if (_customText.isNotEmpty) {
-        currentQuote.sharedText = _customText;
-        currentQuote.sharedTextColor = _textColor;
-        currentQuote.sharedFont = _selectedFont;
+        _quoteManager.updateSharedText(_customText, color: _textColor, font: _selectedFont);
       }
       
       // Réinitialiser les quantités pour le prochain produit
@@ -2293,65 +2479,51 @@ class _ProductDetailPageState extends State<ProductDetailPage>
   }
 
   void _showFinalQuoteOptions() {
+    if (_quoteManager.items.isEmpty && _totalQuantity == 0) return;
+
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       builder: (context) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.background,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(16),
-            ),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Options de devis',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              if (currentQuote.items.isEmpty)
-                Text(
-                  'Voulez-vous demander un devis pour ce produit?',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                )
-              else
-                Text(
-                  'Que souhaitez-vous faire?',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              const SizedBox(height: 24),
-              if (currentQuote.items.isNotEmpty)
+              if (_totalQuantity > 0) ...[
                 FilledButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    _navigateToSimilarProduct();
+                    _addToQuote();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const QuoteSummaryPage(),
+                      ),
+                    );
                   },
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: appTheme.colorScheme.primaryContainer,
-                    foregroundColor: appTheme.colorScheme.onPrimaryContainer,
-                  ),
-                  child: const Text('Continuer avec un autre produit'),
+                  child: const Text('Voir le devis complet'),
                 ),
-              if (currentQuote.items.isNotEmpty) const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               FilledButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _showEmailDialog(isMultiProduct: currentQuote.items.isNotEmpty);
+                  if (_totalQuantity > 0) _addToQuote();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CataloguePage(),
+                    ),
+                  );
                 },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
+                child: Text(
+                  _quoteManager.items.isEmpty 
+                    ? 'Continuer mes achats' 
+                    : 'Ajouter un autre produit',
                 ),
-                child: Text(currentQuote.items.isEmpty ? 'Demander un devis' : 'Terminer et voir le devis'),
               ),
               const SizedBox(height: 8),
               TextButton(
@@ -2363,28 +2535,6 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         ),
       ),
     );
-  }
-
-  void _navigateToSimilarProduct() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CataloguePage(),
-      ),
-    ).then((_) {
-      // Lors du retour à cette page, appliquez les personnalisations partagées
-      if (!_isDisposed && mounted) {
-        setState(() {
-          if (currentQuote.sharedLogo != null) _customLogo = currentQuote.sharedLogo;
-          if (currentQuote.sharedText != null) {
-            _customText = currentQuote.sharedText!;
-            _textColor = currentQuote.sharedTextColor;
-            _selectedFont = currentQuote.sharedFont;
-            _textController.value.text = _customText;
-          }
-        });
-      }
-    });
   }
 
   Future<void> _showEmailDialog({bool isMultiProduct = false}) async {
@@ -2660,10 +2810,10 @@ class _ProductDetailPageState extends State<ProductDetailPage>
   }
 
   Widget _buildMultiProductQuoteSummary() {
-    final totalPrice = currentQuote.totalPrice;
+    final totalPrice = _quoteManager.totalPrice;
     final vat = totalPrice * 0.2;
     final totalWithVat = totalPrice + vat;
-    final reference = 'DEV-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    final reference = 'DEV-${DateTime.now().millisecondsSinceEpoch.toString().substring(4)}';
 
     return Card(
       elevation: 0,
@@ -2705,7 +2855,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
             ),
             const SizedBox(height: 8),
             
-            ...currentQuote.items.map((item) => Column(
+            ..._quoteManager.items.map((item) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -2746,9 +2896,9 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                   ),
             ),
             const SizedBox(height: 8),
-            if (currentQuote.sharedText != null) 
-              Text('- Texte: "${currentQuote.sharedText}"'),
-            if (currentQuote.sharedLogo != null)
+            if (_quoteManager.sharedText != null) 
+              Text('- Texte: "${_quoteManager.sharedText}"'),
+            if (_quoteManager.sharedLogo != null)
               const Text('- Logo partagé: Oui'),
             const SizedBox(height: 16),
             const Divider(),
@@ -2764,8 +2914,8 @@ class _ProductDetailPageState extends State<ProductDetailPage>
             Table(
               columnWidths: const {0: FlexColumnWidth(2), 1: FlexColumnWidth(3)},
               children: [
-                _buildTableRow('Total articles', currentQuote.items.fold<int>(0, (sum, item) => sum + (item.totalQuantity ?? 0)).toString()),
-                _buildTableRow('Sous-total', '${currentQuote.totalPrice.toStringAsFixed(2)}€'),
+                _buildTableRow('Total articles', _quoteManager.totalQuantity.toString()),
+                _buildTableRow('Sous-total', '${_quoteManager.totalPrice.toStringAsFixed(2)}€'),
                 _buildTableRow('TVA (20%)', '${vat.toStringAsFixed(2)}€'),
                 _buildTableRow('Total TTC', '${totalWithVat.toStringAsFixed(2)}€',
                     style: TextStyle(
@@ -2844,18 +2994,6 @@ class _ProductDetailPageState extends State<ProductDetailPage>
 
     setState(() => _isSaving = true);
     try {
-      final List<File?> productImages = [];
-      
-      if (isMultiProduct) {
-        for (var item in currentQuote.items) {
-          final image = await _captureProductImage();
-          if (image != null) productImages.add(image);
-        }
-      } else {
-        final image = await _captureProductImage();
-        if (image != null) productImages.add(image);
-      }
-
       final email = _clientEmailController.value.text;
       final subject = isMultiProduct 
           ? 'Devis multi-produits pour ${_clientNameController.value.text}'
@@ -2865,6 +3003,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
           ? _generateMultiProductEmailBody()
           : _generateEmailBody();
 
+      // Option 1: Try to open email app
       final mailtoUri = Uri(
         scheme: 'mailto',
         path: email,
@@ -2874,20 +3013,25 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         },
       );
 
-      if (await canLaunchUrl(mailtoUri)) {
-        await launchUrl(mailtoUri);
-        if (!_isDisposed) {
-          Navigator.of(context).pop();
-          _showSuccessAnimation();
-          
-          if (isMultiProduct) {
-            currentQuote.items.clear();
-            currentQuote.sharedLogo = null;
-            currentQuote.sharedText = null;
-          }
+      try {
+        if (await canLaunchUrl(mailtoUri)) {
+          await launchUrl(mailtoUri);
+        } else {
+          // Fallback to copy option
+          await _showCopyOptions(context, subject, body);
         }
-      } else {
-        await _showFallbackOptions(context, subject, body);
+      } catch (e) {
+        // Fallback to copy option
+        await _showCopyOptions(context, subject, body);
+      }
+
+      if (!_isDisposed) {
+        Navigator.of(context).pop();
+        _showSuccessAnimation();
+        
+        if (isMultiProduct) {
+          _quoteManager.clearQuote();
+        }
       }
     } catch (e) {
       if (!_isDisposed) {
@@ -2900,6 +3044,56 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<void> _showCopyOptions(BuildContext context, String subject, String body) async {
+    final content = 'Sujet: $subject\n\n$body';
+    
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Options d\'envoi'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Impossible d\'ouvrir l\'application email. Vous pouvez copier le devis ci-dessous:'),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    content,
+                    style: const TextStyle(fontFamily: 'Courier'),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: content));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Devis copié dans le presse-papiers')),
+                  );
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Copier le devis'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Fermer'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _generateEmailBody() {
@@ -2984,7 +3178,7 @@ Cordialement,
   }
 
   String _generateMultiProductEmailBody() {
-    final totalPrice = currentQuote.totalPrice;
+    final totalPrice = _quoteManager.totalPrice;
     final vat = totalPrice * 0.2;
     final totalWithVat = totalPrice + vat;
     final reference = 'DEV-${DateTime.now().millisecondsSinceEpoch.toString().substring(4)}';
@@ -2992,9 +3186,9 @@ Cordialement,
     final trackingParams = {
       'id': reference,
       'amount': totalWithVat.toStringAsFixed(2),
-      'product_count': currentQuote.items.length.toString(),
-      'has_logo': currentQuote.sharedLogo != null ? '1' : '0',
-      'has_text': currentQuote.sharedText != null ? '1' : '0',
+      'product_count': _quoteManager.items.length.toString(),
+      'has_logo': _quoteManager.sharedLogo != null ? '1' : '0',
+      'has_text': _quoteManager.sharedText != null ? '1' : '0',
     };
 
     final queryString = Uri(queryParameters: trackingParams).query;
@@ -3016,7 +3210,7 @@ ${_clientAddressController.value.text.isNotEmpty ? 'Adresse: ${_clientAddressCon
 
 DÉTAILS DES PRODUITS
 -------------------
-${currentQuote.items.map((item) {
+${_quoteManager.items.map((item) {
   return '''
 Produit: ${item.productName}
 Type: ${item.productType}
@@ -3032,8 +3226,8 @@ Prix: ${item.totalPrice.toStringAsFixed(2)}€
 
 PERSONNALISATION PARTAGÉE
 ------------------------
-${currentQuote.sharedText != null ? 'Texte: "${currentQuote.sharedText}"\nPolice: ${currentQuote.sharedFont}\nCouleur texte: ${_getColorName(currentQuote.sharedTextColor)}' : ''}
-${currentQuote.sharedLogo != null ? 'Logo partagé: Oui' : ''}
+${_quoteManager.sharedText != null ? 'Texte: "${_quoteManager.sharedText}"\nPolice: ${_quoteManager.sharedFont}\nCouleur texte: ${_getColorName(_quoteManager.sharedTextColor)}' : ''}
+${_quoteManager.sharedLogo != null ? 'Logo partagé: Oui' : ''}
 
 SUIVI DE COMMANDE
 -----------------
@@ -3068,54 +3262,6 @@ Cordialement,
     return 'personnalisée';
   }
 
-  Future<void> _showFallbackOptions(BuildContext context, String subject, String body) async {
-    if (_isDisposed) return;
-    
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Options d\'envoi'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                const Text('Impossible d\'ouvrir l\'application email. Vous pouvez copier le devis ci-dessous:'),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SelectableText(
-                    'Sujet: $subject\n\n$body',
-                    style: const TextStyle(fontFamily: 'Courier'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Copier'),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: 'Sujet: $subject\n\n$body'));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Devis copié dans le presse-papier')),
-                );
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Fermer'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _showSuccessAnimation() {
     showDialog(
       context: context,
@@ -3126,12 +3272,6 @@ Cordialement,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Lottie.asset(
-            //   'assets/animations/success.json',
-            //   width: 200,
-            //   height: 200,
-            //   fit: BoxFit.contain,
-            // ),
             Icon(
               Icons.check_circle,
               color: Colors.green,
@@ -3159,6 +3299,377 @@ Cordialement,
         ),
       ),
     );
+  }
+}
+
+class QuoteSummaryPage extends StatefulWidget {
+  const QuoteSummaryPage({super.key});
+
+  @override
+  State<QuoteSummaryPage> createState() => _QuoteSummaryPageState();
+}
+
+class _QuoteSummaryPageState extends State<QuoteSummaryPage> {
+  final QuoteManager _quoteManager = QuoteManager();
+  bool _isEditing = false;
+  int? _editingIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _quoteManager.loadQuote();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Devis Multi-Produits'),
+        actions: [
+          if (_quoteManager.items.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.email),
+              onPressed: _sendQuote,
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _quoteManager.items.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+                    itemCount: _quoteManager.items.length,
+                    itemBuilder: (context, index) {
+                      final item = _quoteManager.items[index];
+                      return _isEditing && _editingIndex == index
+                          ? _buildEditItemCard(item, index)
+                          : _buildItemCard(item, index);
+                    },
+                  ),
+          ),
+          _buildTotalSection(),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CataloguePage(),
+          ),
+        ),
+        icon: const Icon(Icons.add),
+        label: Text(_quoteManager.items.isEmpty ? 'Ajouter un produit' : 'Ajouter un autre produit'),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shopping_basket, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Aucun produit dans votre devis',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Commencez par ajouter des produits depuis le catalogue',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemCard(ProductQuoteItem item, int index) {
+    return Card(
+      margin: const EdgeInsets.all(8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.productName,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => setState(() {
+                    _isEditing = true;
+                    _editingIndex = index;
+                  }),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _removeItem(index),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Quantités: ${item.sizeQuantities.entries.where((e) => e.value > 0).map((e) => '${e.key}: ${e.value}').join(', ')}',
+            ),
+            Text('Prix: ${item.totalPrice.toStringAsFixed(2)}€'),
+            if (item.hasCustomization) ...[
+              const SizedBox(height: 8),
+              const Text('Personnalisation:'),
+              if (item.customText != null)
+                Text('- Texte: "${item.customText}"'),
+              if (item.customLogo != null)
+                const Text('- Logo personnalisé'),
+              Text('- Position: ${item.position}'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditItemCard(ProductQuoteItem item, int index) {
+    return Card(
+      margin: const EdgeInsets.all(8),
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Modifier ${item.productName}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            
+            // Quantités par taille
+            Text(
+              'Quantités:',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            Wrap(
+              spacing: 8,
+              children: item.sizeQuantities.keys.map((size) {
+                return Chip(
+                  label: Text('$size: ${item.sizeQuantities[size]}'),
+                  deleteIcon: const Icon(Icons.remove),
+                  onDeleted: () => _updateQuantity(index, size, -1),
+                );
+              }).toList(),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Options de personnalisation partagée
+            if (_quoteManager.sharedText != null || _quoteManager.sharedLogo != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Personnalisation partagée:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  if (_quoteManager.sharedText != null)
+                    CheckboxListTile(
+                      title: Text('Utiliser le texte partagé: "${_quoteManager.sharedText}"'),
+                      value: item.useSharedText,
+                      onChanged: (value) => _toggleSharedText(index, value ?? false),
+                    ),
+                  if (_quoteManager.sharedLogo != null)
+                    CheckboxListTile(
+                      title: const Text('Utiliser le logo partagé'),
+                      value: item.useSharedLogo,
+                      onChanged: (value) => _toggleSharedLogo(index, value ?? false),
+                    ),
+                ],
+              ),
+            
+            const SizedBox(height: 16),
+            
+            // Boutons de contrôle
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() {
+                    _isEditing = false;
+                    _editingIndex = null;
+                  }),
+                  child: const Text('Annuler'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () => setState(() {
+                    _isEditing = false;
+                    _editingIndex = null;
+                  }),
+                  child: const Text('Sauvegarder'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total (${_quoteManager.totalQuantity} articles)',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Text(
+                '${_quoteManager.totalPrice.toStringAsFixed(2)}€',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _quoteManager.items.isEmpty ? null : _sendQuote,
+              child: const Text('Demander un devis'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _quoteManager.removeItem(index);
+      if (_editingIndex == index) {
+        _isEditing = false;
+        _editingIndex = null;
+      }
+    });
+  }
+
+  void _updateQuantity(int index, String size, int delta) {
+    final item = _quoteManager.items[index];
+    final newQuantities = Map<String, int>.from(item.sizeQuantities);
+    final newValue = (newQuantities[size] ?? 0) + delta;
+    
+    if (newValue >= 0) {
+      newQuantities[size] = newValue;
+      setState(() {
+        _quoteManager.updateItem(
+          index,
+          item.copyWith(sizeQuantities: newQuantities),
+        );
+      });
+    }
+  }
+
+  void _toggleSharedText(int index, bool value) {
+    final item = _quoteManager.items[index];
+    setState(() {
+      _quoteManager.updateItem(
+        index,
+        item.copyWith(
+          useSharedText: value,
+          customText: value ? _quoteManager.sharedText : null,
+          textColor: value ? _quoteManager.sharedTextColor : null,
+          font: value ? _quoteManager.sharedFont : null,
+        ),
+      );
+    });
+  }
+
+  void _toggleSharedLogo(int index, bool value) {
+    final item = _quoteManager.items[index];
+    setState(() {
+      _quoteManager.updateItem(
+        index,
+        item.copyWith(
+          useSharedLogo: value,
+          customLogo: value ? _quoteManager.sharedLogo : null,
+        ),
+      );
+    });
+  }
+
+  Future<void> _sendQuote() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Envoyer le devis'),
+        content: const Text('Voulez-vous envoyer ce devis par email ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      // Créer une page temporaire pour générer le devis
+      final quotePage = ProductDetailPage(
+        name: 'Devis Multi-Produits',
+        imagePath: 'assets/carnet.png',
+        price: _quoteManager.totalPrice,
+        productType: 'Divers',
+      );
+
+      // Obtenir l'état de la page pour accéder aux méthodes
+      final quotePageState = quotePage.createState() as _ProductDetailPageState;
+      
+      // Remplir les informations client (optionnel)
+      quotePageState._clientNameController.value.text = 'Client Multi-Produits';
+      
+      // Générer le corps du devis
+      final body = quotePageState._generateMultiProductEmailBody();
+      final subject = 'Devis Multi-Produits';
+
+      // Essayer d'envoyer par email
+      try {
+        final mailtoUri = Uri(
+          scheme: 'mailto',
+          queryParameters: {
+            'subject': subject,
+            'body': body,
+          },
+        );
+
+        if (await canLaunchUrl(mailtoUri)) {
+          await launchUrl(mailtoUri);
+        } else {
+          // Si l'application mail n'est pas disponible, proposer de copier
+          await quotePageState._showCopyOptions(context, subject, body);
+        }
+      } catch (e) {
+        // En cas d'erreur, proposer de copier
+        await quotePageState._showCopyOptions(context, subject, body);
+      }
+    }
   }
 }
 
@@ -3216,6 +3727,30 @@ class ColorPickerButton extends StatelessWidget {
             child: const Text('Valider'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class QuoteBadge extends StatelessWidget {
+  const QuoteBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final quoteManager = QuoteManager();
+    
+    return Badge(
+      label: Text(quoteManager.totalQuantity.toString()),
+      child: IconButton(
+        icon: const Icon(Icons.shopping_basket),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const QuoteSummaryPage(),
+            ),
+          );
+        },
       ),
     );
   }
