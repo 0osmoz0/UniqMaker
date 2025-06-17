@@ -61,5 +61,23 @@
     "dateNaissance": "19/05/2004",
     "region": "Île-de-France",
     "profession": "Étudiant"
+  },
+  {
+    "prenom": "r",
+    "nom": "r",
+    "email": "m@gmail.com",
+    "motDePasse": "1",
+    "dateNaissance": "11/09/2009",
+    "region": "Nouvelle-Aquitaine",
+    "profession": "Freelancer"
+  },
+  {
+    "prenom": "rr",
+    "nom": "re",
+    "email": "r@gmail.com",
+    "motDePasse": "1234",
+    "dateNaissance": "121122",
+    "region": "Nouvelle-Aquitaine",
+    "profession": "En poste"
   }
 ]
