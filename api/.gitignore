@@ -1,0 +1,73 @@
+# Fichiers généraux à ignorer
+.DS_Store
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+.idea/
+.vscode/
+*.code-workspace
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Backend Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+*.sqlite
+*.db
+*.db-journal
+
+# Frontend Node.js
+node_modules/
+dist/
+.temp/
+.cache/
+.svelte-kit/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Vite / VitePress
+.cache/
+.temp/
+
+# Tests
+coverage/
+*.lcov
+.nyc_output/
+
+# Systèmes de contrôle de version
+.git/
+.svn/
+
+# Fichiers spécifiques au projet (d'après votre structure)
+/midocean_crm.db
+/midocean.db
+/backend/__pycache__/
+/backend/*.db
+/backend/*.db-journal
+/frontend/uniqmaker/node_modules/
+/frontend/uniqmaker/dist/
