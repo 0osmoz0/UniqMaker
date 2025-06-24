@@ -69,5 +69,6 @@ coverage/
 /backend/__pycache__/
 /backend/*.db
 /backend/*.db-journal
+/backend/*.env
 /frontend/uniqmaker/node_modules/
 /frontend/uniqmaker/dist/
