@@ -1,74 +1,146 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    --primary: 79 70 229;
+    --secondary: 109 40 217;
+    --success: 16 185 129;
+    --error: 239 68 68;
+    --background: 249 250 251;
   }
-  a:hover {
-    color: #747bff;
+
+  * {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2;
   }
-  button {
-    background-color: #f9f9f9;
+
+  body {
+    @apply bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
+@layer components {
+  .input-field {
+    @apply pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 shadow-sm hover:border-gray-300 bg-white/80 backdrop-blur-sm;
+  }
+
+  .btn-primary {
+    @apply w-full flex justify-center items-center py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-300 shadow-lg hover:shadow-indigo-500/30 disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20;
+  }
+}
+
+/* Animations personnalisées */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Effet de verre moderne */
+.glass-effect {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+/* Style pour les indicateurs de mot de passe */
+.password-strength {
+  @apply mt-2 space-y-1;
+}
+
+.password-requirement {
+  @apply flex items-center text-sm;
+}
+
+.password-requirement.valid {
+  @apply text-green-600;
+}
+
+.password-requirement.invalid {
+  @apply text-gray-500;
+}
+
+/* Animation de la checkbox */
+.checkmark {
+  @apply w-4 h-4 rounded-full border border-gray-300 mr-2 transition-all duration-200;
+}
+
+.checkmark.valid {
+  @apply bg-green-500 border-green-500 text-white flex items-center justify-center;
+}
+
+/* Effet de vague au survol */
+.hover-wave {
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-wave::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+.hover-wave:hover::after {
+  animation: wave 1s ease-out;
+}
+
+@keyframes wave {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20, 20);
+    opacity: 0;
+  }
+}
+
+/* Animation de l'icône de succès */
+.success-icon {
+  @apply w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-md;
+  animation: bounce 0.6s ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.1); }
+  60% { transform: scale(0.9); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .input-field {
+    @apply py-2.5;
+  }
+  
+  .btn-primary {
+    @apply py-2.5 px-4;
+  }
+}

@@ -14,7 +14,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
+CORS(app, origins=["http://localhost:3000", "http://localhost:5173"], supports_credentials=True)
+
+
 
 DATABASE = "midocean_crm.db"
 API_KEY = os.getenv("API_KEY")
@@ -265,7 +267,6 @@ def get_users():
     return jsonify(users)
 
 @app.route('/users', methods=['POST'])
-@auth_required
 def create_user():
     data = request.get_json()
     name = data.get('name')
@@ -633,6 +634,80 @@ def view_all_product_images():
 
     return html_content
 
+@app.route('/users/me', methods=['GET'])
+@auth_required
+def get_current_user():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT id, name, email, role FROM users WHERE id = ?", (request.user_id,))
+    user = c.fetchone()
+    conn.close()
+    
+    if user:
+        return jsonify(dict(user))
+    return jsonify({"message": "Utilisateur non trouvé"}), 404
+
+@app.route('/auth/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([name, email, password]):
+        return jsonify({"message": "Tous les champs sont obligatoires"}), 400
+    
+    # Validation supplémentaire de l'email
+    if '@' not in email or '.' not in email.split('@')[-1]:
+        return jsonify({"message": "Email invalide"}), 400
+    
+    conn = get_db()
+    c = conn.cursor()
+    
+    # Vérification email existant
+    c.execute("SELECT id FROM users WHERE email = ?", (email,))
+    if c.fetchone():
+        conn.close()
+        return jsonify({"message": "Cet email est déjà utilisé"}), 400
+    # Avant le hash du mot de passe
+    if len(password) < 8:
+        return jsonify({"message": "Le mot de passe doit faire au moins 8 caractères"}), 400
+    
+    # Hachage mot de passe
+    password_hash = generate_password_hash(password)
+    
+    try:
+        # FORCER le rôle client pour les inscriptions publiques
+        c.execute("""
+            INSERT INTO users (name, email, role, password_hash) 
+            VALUES (?, ?, 'client', ?)
+        """, (name, email, password_hash))
+        conn.commit()
+        user_id = c.lastrowid
+        
+        # Génération du token JWT
+        token = generate_token(user_id)
+        
+        return jsonify({
+            "message": "Compte créé avec succès",
+            "token": token,
+            "user": {
+                "id": user_id,
+                "name": name,
+                "email": email,
+                "role": "client"
+            }
+        }), 201
+        
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({
+            "message": "Erreur technique",
+            "error": str(e)
+        }), 500
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     init_db()
