@@ -336,6 +336,8 @@ function ProductCatalog({ token }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const searchInputRef = useRef(null);
   const modalRef = useRef(null);
 
@@ -361,9 +363,16 @@ function ProductCatalog({ token }) {
     fetchImages();
   }, [token]);
 
+  // Filtrer les images en fonction de la recherche
   const filteredImages = images.filter(image =>
     image.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Calculer les images à afficher pour la page courante
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredImages.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredImages.length / itemsPerPage);
 
   const handleKeyDown = (e) => {
     if (selectedImage) {
@@ -428,6 +437,106 @@ function ProductCatalog({ token }) {
     }
   };
 
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const Pagination = () => {
+    const getVisiblePages = () => {
+      const visiblePages = [];
+      const maxVisible = 5;
+      const halfVisible = Math.floor(maxVisible / 2);
+
+      let startPage = Math.max(1, currentPage - halfVisible);
+      let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+      if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+      }
+
+      if (startPage > 1) {
+        visiblePages.push(1);
+        if (startPage > 2) {
+          visiblePages.push('...');
+        }
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        if (i > 0 && i <= totalPages) {
+          visiblePages.push(i);
+        }
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          visiblePages.push('...');
+        }
+        visiblePages.push(totalPages);
+      }
+
+      return visiblePages;
+    };
+
+    const visiblePages = getVisiblePages();
+
+    return (
+      <div className="mt-8 flex justify-center animate-fade">
+        <nav className="inline-flex items-center space-x-1" aria-label="Pagination">
+          <button
+            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded-md border border-gray-300 ${
+              currentPage === 1
+                ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                : 'text-gray-700 hover:bg-gray-50 bg-white'
+            }`}
+          >
+            <span className="sr-only">Précédent</span>
+            &lt; Précédent
+          </button>
+
+          {visiblePages.map((page, index) => {
+            if (page === '...') {
+              return (
+                <span key={`ellipsis-${index}`} className="px-3 py-1 text-gray-700">
+                  ...
+                </span>
+              );
+            }
+
+            return (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`px-3 py-1 rounded-md border text-sm font-medium ${
+                  page === currentPage
+                    ? 'z-10 bg-indigo-600 border-indigo-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded-md border border-gray-300 ${
+              currentPage === totalPages
+                ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                : 'text-gray-700 hover:bg-gray-50 bg-white'
+            }`}
+          >
+            <span className="sr-only">Suivant</span>
+            Suivant &gt;
+          </button>
+        </nav>
+      </div>
+    );
+  };
+
   return (
     <>
       <style>{globalStyles}</style>
@@ -437,29 +546,50 @@ function ProductCatalog({ token }) {
           {filteredImages.length} {filteredImages.length > 1 ? 'produits' : 'produit'} trouvé
           {filteredImages.length > 1 ? 's' : ''}
         </h2>
-        <div className="relative w-64">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiSearch className="text-gray-400" />
-          </div>
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Rechercher..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm hover:border-gray-300 transition-smooth w-full"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                searchInputRef.current.focus();
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Produits par page:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
               }}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-smooth"
+              className="border border-gray-200 rounded-md px-2 py-1 text-sm"
             >
-              <FiX />
-            </button>
-          )}
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <div className="relative w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiSearch className="text-gray-400" />
+            </div>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Rechercher..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm hover:border-gray-300 transition-smooth w-full"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  searchInputRef.current.focus();
+                }}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-smooth"
+              >
+                <FiX />
+              </button>
+            )}
+          </div>
         </div>
       </div>
       
@@ -490,43 +620,47 @@ function ProductCatalog({ token }) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {filteredImages.map((url, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-smooth cursor-pointer group relative animate-fade will-change-transform"
-              style={{ animationDelay: `${i * 0.05}s` }}
-            >
-              <div 
-                className="aspect-w-1 aspect-h-1 w-full overflow-hidden"
-                onClick={() => setSelectedImage(url)}
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {currentItems.map((url, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-smooth cursor-pointer group relative animate-fade will-change-transform"
+                style={{ animationDelay: `${i * 0.05}s` }}
               >
-                <img
-                  src={url}
-                  alt={`Produit ${i + 1}`}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-smooth duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-smooth"></div>
+                <div 
+                  className="aspect-w-1 aspect-h-1 w-full overflow-hidden"
+                  onClick={() => setSelectedImage(url)}
+                >
+                  <img
+                    src={url}
+                    alt={`Produit ${i + 1 + indexOfFirstItem}`}
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-smooth duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-smooth"></div>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-sm font-medium text-gray-900 truncate">Produit {i + 1 + indexOfFirstItem}</h3>
+                  <p className="mt-1 text-xs text-gray-500">Réf: {url.split("/").pop().split(".")[0]}</p>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-smooth"></div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToFavorites(url);
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
+                  title="Ajouter aux favoris"
+                >
+                  <FiStar className="text-yellow-500" />
+                </button>
               </div>
-              <div className="p-4">
-                <h3 className="text-sm font-medium text-gray-900 truncate">Produit {i + 1}</h3>
-                <p className="mt-1 text-xs text-gray-500">Réf: {url.split("/").pop().split(".")[0]}</p>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-smooth"></div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  addToFavorites(url);
-                }}
-                className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
-                title="Ajouter aux favoris"
-              >
-                <FiStar className="text-yellow-500" />
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {totalPages > 1 && <Pagination />}
+        </>
       )}
 
       {selectedImage && (

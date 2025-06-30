@@ -134,7 +134,7 @@ def init_db():
     # Insert default admin if not exists
     c.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
     if c.fetchone() is None:
-        password_hash = generate_password_hash(ADMIN_PASSWORD)
+        password_hash = password_hash = generate_password_hash(ADMIN_PASSWORD, method='pbkdf2:sha256')
         c.execute("INSERT INTO users (name, email, role, password_hash) VALUES (?, ?, ?, ?)",
                   ('Administrator', 'admin@midocean.local', 'admin', password_hash))
 

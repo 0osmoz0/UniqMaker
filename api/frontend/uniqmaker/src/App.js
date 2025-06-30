@@ -2,11 +2,14 @@ import { useState } from "react";
 import { FiUser, FiMail, FiLock, FiArrowRight, FiCheck, FiX } from "react-icons/fi";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import './index.css';
 
 const API_BASE = "http://localhost:5000";
 
 function App() {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -16,7 +19,6 @@ function App() {
   });
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
@@ -35,7 +37,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    
+
     if (formData.password !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas");
       return;
@@ -51,7 +53,7 @@ function App() {
       });
 
       if (response.status === 201) {
-        setSuccess(true);
+        navigate("/Catalogue");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Erreur lors de l'inscription");
@@ -60,52 +62,16 @@ function App() {
     }
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center px-4">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-white/20 backdrop-blur-sm"
-        >
-          <div className="bg-gradient-to-r from-green-100 to-emerald-100 p-6 rounded-xl mb-6 border border-green-200/50">
-            <motion.div 
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4"
-            >
-              <FiCheck className="text-white text-2xl" />
-            </motion.div>
-            <h2 className="text-2xl font-bold text-green-800 mb-2">Inscription réussie !</h2>
-            <p className="text-green-600">Votre compte a été créé avec succès.</p>
-          </div>
-          <p className="text-gray-600 mb-6">
-            Vous pouvez maintenant accéder à votre espace client.
-          </p>
-          <motion.a
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            href="/uniqmaker"
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-indigo-500/30"
-          >
-            Se connecter <FiArrowRight className="ml-2" />
-          </motion.a>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center px-4 py-12">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl max-w-md w-full border border-white/20"
       >
         <div className="text-center mb-8">
-          <motion.div 
+          <motion.div
             whileHover={{ rotate: 5 }}
             className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-md"
           >
@@ -114,7 +80,7 @@ function App() {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Créer un compte</h1>
           <p className="text-gray-500">Rejoignez notre plateforme dès maintenant</p>
         </div>
-        
+
         <AnimatePresence>
           {error && (
             <motion.div
@@ -128,7 +94,7 @@ function App() {
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -149,7 +115,7 @@ function App() {
               />
             </motion.div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Adresse email
@@ -169,7 +135,7 @@ function App() {
               />
             </motion.div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Mot de passe
@@ -187,7 +153,6 @@ function App() {
                 onBlur={() => setPasswordFocused(false)}
                 className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm hover:border-gray-300"
                 required
-                minLength="6"
                 placeholder="••••••••"
               />
             </motion.div>
@@ -216,7 +181,7 @@ function App() {
               )}
             </AnimatePresence>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirmer le mot de passe
@@ -232,12 +197,11 @@ function App() {
                 onChange={handleChange}
                 className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm hover:border-gray-300"
                 required
-                minLength="6"
                 placeholder="••••••••"
               />
             </motion.div>
           </div>
-          
+
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
@@ -258,10 +222,10 @@ function App() {
             )}
           </motion.button>
         </form>
-        
+
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>
-            Vous avez déjà un compte?{" "}
+            Vous avez déjà un compte ?{" "}
             <motion.a
               whileHover={{ scale: 1.05 }}
               href="/uniqmaker"
