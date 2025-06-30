@@ -204,7 +204,6 @@ function Dashboard({ token, onLogout }) {
   const [activeTab, setActiveTab] = useState('products');
   const [userRole, setUserRole] = useState('client');
 
-  // Récupérer le rôle de l'utilisateur après le login
   useEffect(() => {
     const fetchUserRole = async () => {
       try {
@@ -318,7 +317,7 @@ function Dashboard({ token, onLogout }) {
         </header>
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeTab === 'products' && <ProductCatalog token={token} />}
+          {activeTab === 'products' && <ProductCatalog token={token} userRole={userRole} />}
           {activeTab === 'favorites' && <FavoritesManager token={token} />}
           {activeTab === 'clients' && <ClientsManager token={token} />}
           {activeTab === 'quotes' && <QuotesManager token={token} />}
@@ -329,7 +328,7 @@ function Dashboard({ token, onLogout }) {
   );
 }
 
-function ProductCatalog({ token }) {
+function ProductCatalog({ token, userRole }) {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -363,12 +362,10 @@ function ProductCatalog({ token }) {
     fetchImages();
   }, [token]);
 
-  // Filtrer les images en fonction de la recherche
   const filteredImages = images.filter(image =>
     image.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculer les images à afficher pour la page courante
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredImages.slice(indexOfFirstItem, indexOfLastItem);
@@ -431,6 +428,41 @@ function ProductCatalog({ token }) {
       } else {
         const data = await response.json();
         alert(data.message || "Erreur lors de l'ajout aux favoris");
+      }
+    } catch (err) {
+      alert("Erreur de connexion au serveur");
+    }
+  };
+
+  const addToCatalog = async (imageUrl) => {
+    if (!confirm("Voulez-vous vraiment ajouter ce produit au catalogue ?")) return;
+    
+    try {
+      const productId = imageUrl.split('/').pop().split('.')[0];
+      const productName = `Produit ${productId}`;
+      
+      const response = await fetch(`${API_BASE}/products`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: productId,
+          name: productName,
+          image: imageUrl,
+          price: 0,
+          description: "Nouveau produit ajouté au catalogue",
+          category: "Autre",
+          stock: 0
+        })
+      });
+      
+      if (response.ok) {
+        alert('Produit ajouté au catalogue avec succès!');
+      } else {
+        const data = await response.json();
+        alert(data.message || "Erreur lors de l'ajout au catalogue");
       }
     } catch (err) {
       alert("Erreur de connexion au serveur");
@@ -645,16 +677,32 @@ function ProductCatalog({ token }) {
                   <p className="mt-1 text-xs text-gray-500">Réf: {url.split("/").pop().split(".")[0]}</p>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-smooth"></div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToFavorites(url);
-                  }}
-                  className="absolute top-2 right-2 p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
-                  title="Ajouter aux favoris"
-                >
-                  <FiStar className="text-yellow-500" />
-                </button>
+                
+                {/* Boutons d'action */}
+                <div className="absolute top-2 right-2 flex flex-col space-y-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToFavorites(url);
+                    }}
+                    className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
+                    title="Ajouter aux favoris"
+                  >
+                    <FiStar className="text-yellow-500" />
+                  </button>
+                  {(userRole === 'admin' || userRole === 'commercial') && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCatalog(url);
+                      }}
+                      className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
+                      title="Ajouter au catalogue"
+                    >
+                      <FiPlus className="text-indigo-500" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
