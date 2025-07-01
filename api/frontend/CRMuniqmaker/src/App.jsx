@@ -476,7 +476,7 @@ formData.append("price", 0);
 formData.append("category_level1", product.category_level1 || "Catégorie par défaut");
 formData.append("category_level2", product.category_level2 || "Sous-catégorie par défaut");
 formData.append("category_level3", product.category_level3 || "Sous-sous-catégorie par défaut");
-formData.append("description", "Nouveau produit ajouté au catalogue");
+formData.append("description", product.long_description || "Pas de description disponible");
 formData.append("stock", 0);
 formData.append("image_url", product.images[0]?.url || "");
 
