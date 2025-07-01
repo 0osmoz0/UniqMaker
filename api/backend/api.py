@@ -7,8 +7,12 @@ import requests
 import os
 from dotenv import load_dotenv
 import jwt
+import traceback
 from functools import wraps
+from flask import send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+
 
 # Load env variables
 load_dotenv()
@@ -19,6 +23,8 @@ CORS(app, origins=["http://localhost:3000", "http://localhost:5173"], supports_c
 
 
 DATABASE = "midocean_crm.db"
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 API_KEY = os.getenv("API_KEY")
 JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
 app.config['SECRET_KEY'] = JWT_SECRET
@@ -75,6 +81,21 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
 
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            price REAL NOT NULL,
+            image TEXT,
+            category_level1 TEXT,
+            category_level2 TEXT,
+            category_level3 TEXT,
+            description TEXT,
+            stock INTEGER DEFAULT 0,
+            rating REAL DEFAULT 0
+        )
+    ''')
+
     # Table for storing API data cache
     c.execute("""
         CREATE TABLE IF NOT EXISTS api_data (
@@ -130,6 +151,9 @@ def init_db():
             FOREIGN KEY(client_id) REFERENCES clients(id)
         )
     """)
+
+    conn.commit()
+
 
     # Insert default admin if not exists
     c.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
@@ -559,9 +583,9 @@ def create_quote():
 
 # --- Nouvelle route pour renvoyer toutes les images des produits en JSON ---
 
-@app.route('/products/images', methods=['GET'])
+@app.route('/products/images/full', methods=['GET'])
 @auth_required
-def products_images():
+def products_images_full():
     conn = get_db()
     c = conn.cursor()
     c.execute("""
@@ -576,63 +600,71 @@ def products_images():
     if not row:
         return jsonify({"message": "Aucune donnée produit trouvée"}), 404
 
-    products = json.loads(row['data'])
+    try:
+        data = json.loads(row['data'])
+    except Exception:
+        return jsonify({"message": "Erreur de format JSON"}), 500
 
-    images = []
+    products = data.get("products", []) if isinstance(data, dict) else data
+    results = []
+
     for product in products:
-        variants = product.get("variants", [])
-        for variant in variants:
-            digital_assets = variant.get("digital_assets", [])
-            for asset in digital_assets:
+        base_info = {
+            "product_name": product.get("product_name"),
+            "master_code": product.get("master_code"),
+            "short_description": product.get("short_description"),
+            "long_description": product.get("long_description"),
+            "brand": product.get("brand"),
+            "material": product.get("material"),
+            # Remplacement de category_code par les niveaux de catégorie
+            "category_level1": product.get("variants", [{}])[0].get("category_level1"),
+            "category_level2": product.get("variants", [{}])[0].get("category_level2"),
+            "category_level3": product.get("variants", [{}])[0].get("category_level3"),
+        }
+
+        product_images = []
+
+        # Images depuis variants > digital_assets
+        for variant in product.get("variants", []):
+            for asset in variant.get("digital_assets", []):
                 if asset.get("type") == "image":
-                    url = asset.get("url_highress") or asset.get("url")
-                    if url:
-                        images.append(url)
+                    product_images.append({
+                        "source": "variant.digital_assets",
+                        "subtype": asset.get("subtype"),
+                        "url": asset.get("url_highress") or asset.get("url"),
+                    })
 
-    return jsonify({"images": images})
-
-
-@app.route('/products/images/view', methods=['GET'])
-@auth_required
-def view_all_product_images():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""
-        SELECT data FROM api_data 
-        WHERE endpoint = 'products' 
-        ORDER BY fetched_at DESC 
-        LIMIT 1
-    """)
-    row = c.fetchone()
-    if not row:
-        conn.close()
-        return "<p>Aucune donnée produit trouvée</p>", 404
-
-    data = json.loads(row['data'])
-    conn.close()
-
-    if isinstance(data, dict):
-        products = data.get("products", [])
-    elif isinstance(data, list):
-        products = data
-    else:
-        products = []
-
-    images = []
-    for product in products:
-        printing_positions = product.get("printing_positions", [])
-        for position in printing_positions:
+        # Images depuis printing_positions
+        for position in product.get("printing_positions", []):
             for img in position.get("images", []):
                 if "print_position_image_blank" in img:
-                    images.append(img["print_position_image_blank"])
+                    product_images.append({
+                        "source": "printing_positions",
+                        "type": "blank",
+                        "url": img.get("print_position_image_blank")
+                    })
                 if "print_position_image_with_area" in img:
-                    images.append(img["print_position_image_with_area"])
+                    product_images.append({
+                        "source": "printing_positions",
+                        "type": "with_area",
+                        "url": img.get("print_position_image_with_area")
+                    })
 
-    html_content = "<h1>Images Produits</h1>"
-    for url in images:
-        html_content += f'<div style="margin-bottom:20px;"><img src="{url}" style="max-width:300px;"/><br>{url}</div>'
+        # Tri optionnel pour mettre en premier les images principales
+        product_images.sort(key=lambda img: (
+            0 if img.get("subtype") == "item_picture_front" else 1
+        ))
 
-    return html_content
+        # Ajout même si images est vide
+        results.append({
+            **base_info,
+            "images": product_images
+        })
+
+    return jsonify({"products_with_images": results})
+
+
+
 
 @app.route('/users/me', methods=['GET'])
 @auth_required
@@ -708,6 +740,124 @@ def register():
         }), 500
     finally:
         conn.close()
+
+# Route pour servir les images
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+# Route pour obtenir les produits
+@app.route('/products', methods=['GET'])
+def get_products():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT * FROM products')
+    rows = c.fetchall()
+    conn.close()
+
+    products = []
+    for row in rows:
+        product = dict(row)
+        if product.get("image"):
+            product["image"] = request.host_url.rstrip("/") + product["image"]
+        products.append(product)
+
+    return jsonify(products)
+
+# Route pour ajouter un produit
+@app.route('/products', methods=['POST'])
+def add_product():
+    try:
+        # Récupérer les données du formulaire
+        name = request.form.get('name')
+        price = request.form.get('price')
+        category_level1 = request.form.get('category_level1')
+        category_level2 = request.form.get('category_level2')
+        category_level3 = request.form.get('category_level3')
+        description = request.form.get('description')
+        stock = request.form.get('stock', 0)
+        image_url = request.form.get('image_url')  # URL de l'image
+
+        # Vérifier que le nom est bien présent
+        if not name:
+            return jsonify({'message': "Le champ 'name' est requis."}), 400
+
+        # Initialiser la variable image_path
+        image_path = None
+
+        # Si l'image provient d'une URL
+        if image_url:
+            response = requests.get(image_url)
+            if response.status_code == 200:
+                # Créer le dossier d'uploads si nécessaire
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                filename = secure_filename(image_url.split("/")[-1])
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                
+                # Sauvegarder l'image
+                with open(filepath, "wb") as f:
+                    f.write(response.content)
+                
+                # Définir le chemin de l'image relative
+                image_path = f"/uploads/{filename}"
+            else:
+                return jsonify({'message': "Impossible de télécharger l'image."}), 400
+        else:
+            # Si aucune URL d'image n'est fournie, vérifier si un fichier est téléchargé
+            image_file = request.files.get('image_url')
+            if image_file:
+                # Sauvegarder le fichier téléchargé
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                filename = secure_filename(image_file.filename)
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                image_file.save(filepath)
+
+                # Définir le chemin de l'image relative
+                image_path = f"/uploads/{filename}"
+
+        # Insérer le produit dans la base de données
+        conn = sqlite3.connect(DATABASE)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO products (name, price, image, category_level1, category_level2, category_level3, description, stock)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            name,
+            price,
+            image_path,
+            category_level1 or "Non spécifié",
+            category_level2 or "Non spécifié",
+            category_level3 or "Non spécifié",
+            description,
+            stock
+        ))
+        conn.commit()
+        new_id = c.lastrowid
+        conn.close()
+
+        # Préparer la réponse
+        new_product = {
+            'id': new_id,
+            'name': name,
+            'price': price,
+            'image': request.host_url.rstrip("/") + image_path if image_path else None,
+            'category_level1': category_level1,
+            'category_level2': category_level2,
+            'category_level3': category_level3,
+            'description': description,
+            'stock': stock
+        }
+
+        return jsonify(new_product), 201
+
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+
+
+
+
 
 if __name__ == "__main__":
     init_db()

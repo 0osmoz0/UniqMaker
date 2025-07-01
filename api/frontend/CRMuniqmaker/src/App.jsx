@@ -329,7 +329,7 @@ function Dashboard({ token, onLogout }) {
 }
 
 function ProductCatalog({ token, userRole }) {
-  const [images, setImages] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -337,180 +337,204 @@ function ProductCatalog({ token, userRole }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const searchInputRef = useRef(null);
   const modalRef = useRef(null);
 
+  // Récupération des produits avec images
   useEffect(() => {
-    const fetchImages = async () => {
+    async function fetchProducts() {
+      setLoading(true);
+      setError("");
       try {
-        const response = await fetch(`${API_BASE}/products/images`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const response = await fetch(`${API_BASE}/products/images/full`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
+
+        console.log(data)
+
         if (response.ok) {
-          setImages(data.images || []);
+          setProducts(data.products_with_images || []);
         } else {
           setError(data.message || "Erreur lors du chargement des images");
         }
-      } catch (err) {
+      } catch {
         setError("Erreur de connexion au serveur");
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchImages();
+    }
+    fetchProducts();
   }, [token]);
 
-  const filteredImages = images.filter(image =>
-    image.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filtrer les produits selon la recherche
+  const filteredProducts = products.filter((product) =>
+    [product.product_name, product.master_code, product.brand]
+      .filter(Boolean)
+      .some((field) =>
+        field.toLowerCase().includes(searchTerm.toLowerCase())
+      )
   );
 
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredImages.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredImages.length / itemsPerPage);
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
+  // Navigation dans la modal (clavier)
   const handleKeyDown = (e) => {
-    if (selectedImage) {
-      if (e.key === 'Escape') setSelectedImage(null);
-      else if (e.key === 'ArrowRight') navigateImage(1);
-      else if (e.key === 'ArrowLeft') navigateImage(-1);
-    }
+    if (!selectedImage) return;
+
+    if (e.key === "Escape") setSelectedImage(null);
+    else if (e.key === "ArrowRight") navigateImage(1);
+    else if (e.key === "ArrowLeft") navigateImage(-1);
   };
 
+  // Naviguer entre les images dans la modal
   const navigateImage = (direction) => {
-    const newIndex = (currentIndex + direction + filteredImages.length) % filteredImages.length;
+    const newIndex =
+      (currentIndex + direction + filteredProducts.length) % filteredProducts.length;
     setCurrentIndex(newIndex);
-    setSelectedImage(filteredImages[newIndex]);
+    setSelectedImage(filteredProducts[newIndex].images[0]?.url || null);
   };
 
+  // Gérer la modal : mise à jour index image et overflow body + écoute clavier
   useEffect(() => {
     if (selectedImage) {
-      const index = filteredImages.findIndex(img => img === selectedImage);
+      const index = filteredProducts.findIndex(
+        (p) => p.images[0]?.url === selectedImage
+      );
       setCurrentIndex(index);
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "auto";
     }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedImage, filteredImages]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImage, filteredProducts]);
 
+  // Fermer la modal en cliquant en dehors
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (modalRef.current && !modalRef.current.contains(e.target)) {
         setSelectedImage(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const addToFavorites = async (imageUrl) => {
+  // Ajouter un produit aux favoris
+  const addToFavorites = async (product) => {
     try {
-      const productId = imageUrl.split('/').pop().split('.')[0];
+      const productId = product.master_code || product.id || null;
+      if (!productId) {
+        alert("Produit invalide");
+        return;
+      }
+
       const response = await fetch(`${API_BASE}/favorites`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           product_id: productId,
-          product_name: `Produit ${productId}`
-        })
+          product_name: product.product_name || `Produit ${productId}`,
+        }),
       });
-      
+
       if (response.ok) {
-        alert('Produit ajouté aux favoris!');
+        alert("Produit ajouté aux favoris !");
       } else {
         const data = await response.json();
         alert(data.message || "Erreur lors de l'ajout aux favoris");
       }
-    } catch (err) {
+    } catch {
       alert("Erreur de connexion au serveur");
     }
   };
 
-  const addToCatalog = async (imageUrl) => {
-    if (!confirm("Voulez-vous vraiment ajouter ce produit au catalogue ?")) return;
-    
-    try {
-      const productId = imageUrl.split('/').pop().split('.')[0];
-      const productName = `Produit ${productId}`;
-      
-      const response = await fetch(`${API_BASE}/products`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: productId,
-          name: productName,
-          image: imageUrl,
-          price: 0,
-          description: "Nouveau produit ajouté au catalogue",
-          category: "Autre",
-          stock: 0
-        })
-      });
-      
-      if (response.ok) {
-        alert('Produit ajouté au catalogue avec succès!');
-      } else {
-        const data = await response.json();
-        alert(data.message || "Erreur lors de l'ajout au catalogue");
-      }
-    } catch (err) {
-      alert("Erreur de connexion au serveur");
-    }
-  };
+  const addToCatalog = async (product) => {
+  if (!window.confirm("Voulez-vous vraiment ajouter ce produit au catalogue ?"))
+    return;
 
+  try {
+    const productId = product.master_code || product.id || null;
+    if (!productId) {
+      alert("Produit invalide");
+      return;
+    }
+
+const formData = new FormData();
+formData.append("name", product.product_name || `Produit ${productId}`);
+formData.append("price", 0);
+formData.append("category_level1", product.category_level1 || "Catégorie par défaut");
+formData.append("category_level2", product.category_level2 || "Sous-catégorie par défaut");
+formData.append("category_level3", product.category_level3 || "Sous-sous-catégorie par défaut");
+formData.append("description", "Nouveau produit ajouté au catalogue");
+formData.append("stock", 0);
+formData.append("image_url", product.images[0]?.url || "");
+
+
+    const response = await fetch(`${API_BASE}/products`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // Pas de Content-Type, FormData s'en charge
+      },
+      body: formData,
+    });
+
+    if (response.ok) {
+      alert("Produit ajouté au catalogue avec succès !");
+    } else {
+      const data = await response.json();
+      alert(data.message || "Erreur lors de l'ajout au catalogue");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Erreur de connexion au serveur ou lors du traitement");
+  }
+};
+
+
+
+  // Changement de page
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Composant pagination
   const Pagination = () => {
-    const getVisiblePages = () => {
-      const visiblePages = [];
-      const maxVisible = 5;
-      const halfVisible = Math.floor(maxVisible / 2);
+    const maxVisible = 5;
+    const halfVisible = Math.floor(maxVisible / 2);
 
-      let startPage = Math.max(1, currentPage - halfVisible);
-      let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    let startPage = Math.max(1, currentPage - halfVisible);
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
 
-      if (endPage - startPage + 1 < maxVisible) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-      }
+    const pages = [];
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) pages.push("...");
+    }
 
-      if (startPage > 1) {
-        visiblePages.push(1);
-        if (startPage > 2) {
-          visiblePages.push('...');
-        }
-      }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
 
-      for (let i = startPage; i <= endPage; i++) {
-        if (i > 0 && i <= totalPages) {
-          visiblePages.push(i);
-        }
-      }
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          visiblePages.push('...');
-        }
-        visiblePages.push(totalPages);
-      }
-
-      return visiblePages;
-    };
-
-    const visiblePages = getVisiblePages();
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pages.push("...");
+      pages.push(totalPages);
+    }
 
     return (
       <div className="mt-8 flex justify-center animate-fade">
@@ -520,48 +544,42 @@ function ProductCatalog({ token, userRole }) {
             disabled={currentPage === 1}
             className={`px-3 py-1 rounded-md border border-gray-300 ${
               currentPage === 1
-                ? 'text-gray-400 cursor-not-allowed bg-gray-100'
-                : 'text-gray-700 hover:bg-gray-50 bg-white'
+                ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                : "text-gray-700 hover:bg-gray-50 bg-white"
             }`}
           >
-            <span className="sr-only">Précédent</span>
             &lt; Précédent
           </button>
 
-          {visiblePages.map((page, index) => {
-            if (page === '...') {
-              return (
-                <span key={`ellipsis-${index}`} className="px-3 py-1 text-gray-700">
-                  ...
-                </span>
-              );
-            }
-
-            return (
+          {pages.map((page, idx) =>
+            page === "..." ? (
+              <span key={`dots-${idx}`} className="px-3 py-1 text-gray-700">
+                ...
+              </span>
+            ) : (
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
                 className={`px-3 py-1 rounded-md border text-sm font-medium ${
                   page === currentPage
-                    ? 'z-10 bg-indigo-600 border-indigo-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? "z-10 bg-indigo-600 border-indigo-600 text-white"
+                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 {page}
               </button>
-            );
-          })}
+            )
+          )}
 
           <button
             onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
             className={`px-3 py-1 rounded-md border border-gray-300 ${
               currentPage === totalPages
-                ? 'text-gray-400 cursor-not-allowed bg-gray-100'
-                : 'text-gray-700 hover:bg-gray-50 bg-white'
+                ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                : "text-gray-700 hover:bg-gray-50 bg-white"
             }`}
           >
-            <span className="sr-only">Suivant</span>
             Suivant &gt;
           </button>
         </nav>
@@ -571,16 +589,16 @@ function ProductCatalog({ token, userRole }) {
 
   return (
     <>
-      <style>{globalStyles}</style>
-
+      {/* En-tête et barre de recherche */}
       <div className="mb-8 flex justify-between items-center animate-fade" style={{ animationDelay: "0.2s" }}>
         <h2 className="text-lg font-medium text-gray-900">
-          {filteredImages.length} {filteredImages.length > 1 ? 'produits' : 'produit'} trouvé
-          {filteredImages.length > 1 ? 's' : ''}
+          {filteredProducts.length} produit{filteredProducts.length > 1 ? "s" : ""} trouvé{filteredProducts.length > 1 ? "s" : ""}
         </h2>
+
         <div className="flex items-center space-x-4">
+          {/* Sélecteur nombre d’items par page */}
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Produits par page:</span>
+            <span className="text-sm text-gray-600">Produits par page :</span>
             <select
               value={itemsPerPage}
               onChange={(e) => {
@@ -589,12 +607,15 @@ function ProductCatalog({ token, userRole }) {
               }}
               className="border border-gray-200 rounded-md px-2 py-1 text-sm"
             >
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
+              {[10, 20, 50, 100].map((num) => (
+                <option key={num} value={num}>
+                  {num}
+                </option>
+              ))}
             </select>
           </div>
+
+          {/* Barre de recherche */}
           <div className="relative w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiSearch className="text-gray-400" />
@@ -613,10 +634,11 @@ function ProductCatalog({ token, userRole }) {
             {searchTerm && (
               <button
                 onClick={() => {
-                  setSearchTerm('');
+                  setSearchTerm("");
                   searchInputRef.current.focus();
                 }}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-smooth"
+                aria-label="Effacer la recherche"
               >
                 <FiX />
               </button>
@@ -624,7 +646,8 @@ function ProductCatalog({ token, userRole }) {
           </div>
         </div>
       </div>
-      
+
+      {/* Affichage du contenu */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center animate-fade">
@@ -639,7 +662,7 @@ function ProductCatalog({ token, userRole }) {
             <p className="text-red-700 font-medium">{error}</p>
           </div>
         </div>
-      ) : filteredImages.length === 0 ? (
+      ) : filteredProducts.length === 0 ? (
         <div className="text-center py-12 animate-fade">
           <div className="inline-block p-6 bg-white rounded-xl shadow-sm border border-gray-100">
             <p className="text-gray-500 text-lg">Aucun produit ne correspond à votre recherche</p>
@@ -653,108 +676,153 @@ function ProductCatalog({ token, userRole }) {
         </div>
       ) : (
         <>
+          {/* Grille des produits */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {currentItems.map((url, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-smooth cursor-pointer group relative animate-fade will-change-transform"
-                style={{ animationDelay: `${i * 0.05}s` }}
-              >
-                <div 
-                  className="aspect-w-1 aspect-h-1 w-full overflow-hidden"
-                  onClick={() => setSelectedImage(url)}
-                >
-                  <img
-                    src={url}
-                    alt={`Produit ${i + 1 + indexOfFirstItem}`}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-smooth duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-smooth"></div>
-                </div>
-                <div className="p-4">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">Produit {i + 1 + indexOfFirstItem}</h3>
-                  <p className="mt-1 text-xs text-gray-500">Réf: {url.split("/").pop().split(".")[0]}</p>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-smooth"></div>
-                
-                {/* Boutons d'action */}
-                <div className="absolute top-2 right-2 flex flex-col space-y-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToFavorites(url);
-                    }}
-                    className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
-                    title="Ajouter aux favoris"
-                  >
-                    <FiStar className="text-yellow-500" />
-                  </button>
-                  {(userRole === 'admin' || userRole === 'commercial') && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCatalog(url);
-                      }}
-                      className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
-                      title="Ajouter au catalogue"
-                    >
-                      <FiPlus className="text-indigo-500" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+            {currentItems.map((product, i) => {
+    const imageUrl = product.images[0]?.url;
+    const reference = product.master_code;
+    const name = product.product_name || `Produit ${indexOfFirstItem + i + 1}`;
+
+       // Get category levels dynamically
+    const category_level1 = product.category_level1;
+    const category_level2 = product.category_level2;
+    const category_level3 = product.category_level3;
+
+
+    console.log("Product:", name);
+    console.log("Category Level 1:", category_level1);  // Utilise category_level1 ici
+    console.log("Category Level 2:", category_level2);  // Utilise category_level2 ici
+    console.log("Category Level 3:", category_level3); 
+
+    return (
+      <div
+        key={product.master_code || i}
+        className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-smooth cursor-pointer group relative animate-fade will-change-transform"
+        style={{ animationDelay: `${i * 0.05}s` }}
+        onClick={() => imageUrl && setSelectedImage(imageUrl)}
+        aria-label={`Voir les détails du produit ${name}`}
+      >
+        <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={name}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-smooth duration-500"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-smooth"></div>
+        </div>
+
+        <div className="p-4 text-sm text-gray-700 space-y-1">
+          <h3 className="font-semibold text-gray-900 truncate">{name}</h3>
+          <p><strong>Référence :</strong> {reference || "N/A"}</p>
+          {product.brand && <p><strong>Marque :</strong> {product.brand}</p>}
+          {product.material && <p><strong>Matériau :</strong> {product.material}</p>}
+          {/* Conditionally render category levels */}
+           {/* Conditionally render category levels */}
+          {category_level1 && (
+            <p><strong>Catégorie Niveau 1 :</strong> {category_level1}</p>
+          )}
+          {category_level2 && (
+            <p><strong>Catégorie Niveau 2 :</strong> {category_level2}</p>
+          )}
+          {category_level3 && (
+            <p><strong>Catégorie Niveau 3 :</strong> {category_level3}</p>
+          )}
+
+          {product.short_description && (
+            <p className="italic text-gray-600 truncate" title={product.short_description}>
+              {product.short_description}
+            </p>
+          )}
+
+          {product.long_description && (
+            <p className="text-gray-500 max-h-20 overflow-auto mt-1 whitespace-pre-wrap" title={product.long_description}>
+              {product.long_description}
+            </p>
+          )}
+        </div>
+
+        {/* Boutons d'action */}
+        <div className="absolute top-2 right-2 flex flex-col space-y-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addToFavorites(product);
+            }}
+            className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
+            title="Ajouter aux favoris"
+            aria-label={`Ajouter ${name} aux favoris`}
+          >
+            <FiStar className="text-indigo-600" />
+          </button>
+
+          {userRole === "admin" && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                addToCatalog(product);
+              }}
+              className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
+              title="Ajouter au catalogue"
+              aria-label={`Ajouter ${name} au catalogue`}
+            >
+              <FiPlus className="text-green-600" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  })}
           </div>
 
+          {/* Pagination */}
           {totalPages > 1 && <Pagination />}
-        </>
-      )}
 
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade">
-          <div 
-            ref={modalRef}
-            className="relative max-w-4xl w-full max-h-[90vh] animate-scale will-change-transform"
-          >
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-smooth p-2"
+          {/* Modal d’affichage de l’image */}
+          {selectedImage && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 animate-fade"
+              aria-modal="true"
+              role="dialog"
+              aria-labelledby="modal-title"
             >
-              <FiX className="w-6 h-6" />
-            </button>
-            
-            {filteredImages.length > 1 && (
-              <>
+              <div
+                ref={modalRef}
+                className="relative max-w-5xl max-h-full mx-4 rounded-xl overflow-hidden shadow-lg bg-gray-900"
+              >
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-gray-700 hover:bg-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  aria-label="Fermer la fenêtre d’image"
+                >
+                  <FiX size={24} />
+                </button>
+
+                <img
+                  src={selectedImage}
+                  alt={`Produit agrandi ${currentIndex + 1}`}
+                  className="max-h-[80vh] w-auto max-w-full rounded-lg mx-auto block"
+                />
+
                 <button
                   onClick={() => navigateImage(-1)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-smooth"
+                  className="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-gray-700 hover:bg-gray-600 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  aria-label="Image précédente"
                 >
-                  <FiChevronLeft className="w-6 h-6" />
+                  <FiChevronLeft size={30} />
                 </button>
-                
+
                 <button
                   onClick={() => navigateImage(1)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-smooth"
+                  className="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-gray-700 hover:bg-gray-600 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  aria-label="Image suivante"
                 >
-                  <FiChevronRight className="w-6 h-6" />
+                  <FiChevronRight size={30} />
                 </button>
-              </>
-            )}
-            
-            <div className="flex justify-center items-center h-full">
-              <img
-                src={selectedImage}
-                alt="Produit en grand"
-                className="max-h-[80vh] max-w-full object-contain rounded-lg"
-              />
+              </div>
             </div>
-            
-            <div className="text-center mt-4 text-white">
-              {currentIndex + 1} / {filteredImages.length}
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </>
   );
