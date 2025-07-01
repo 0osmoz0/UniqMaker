@@ -588,27 +588,65 @@ def create_quote():
 def products_images_full():
     conn = get_db()
     c = conn.cursor()
+
+    # Récupération des produits
     c.execute("""
         SELECT data FROM api_data 
         WHERE endpoint = 'products' 
         ORDER BY fetched_at DESC 
         LIMIT 1
     """)
-    row = c.fetchone()
+    products_row = c.fetchone()
+
+    # Récupération de la liste des prix
+    c.execute("""
+        SELECT data FROM api_data 
+        WHERE endpoint = 'pricelist' 
+        ORDER BY fetched_at DESC 
+        LIMIT 1
+    """)
+    pricelist_row = c.fetchone()
+
     conn.close()
 
-    if not row:
+    if not products_row:
         return jsonify({"message": "Aucune donnée produit trouvée"}), 404
 
     try:
-        data = json.loads(row['data'])
+        products_data = json.loads(products_row['data'])
+        pricelist_data = json.loads(pricelist_row['data']) if pricelist_row else {}
     except Exception:
         return jsonify({"message": "Erreur de format JSON"}), 500
 
-    products = data.get("products", []) if isinstance(data, dict) else data
+    products = products_data.get("products", []) if isinstance(products_data, dict) else products_data
+    prices = pricelist_data.get("price", []) if isinstance(pricelist_data, dict) else []
+
+    # Dictionnaire des prix par variant_id
+    price_by_variant_id = {
+        item["variant_id"]: item for item in prices if "variant_id" in item
+    }
+
     results = []
 
     for product in products:
+        variants = product.get("variants", [])
+
+        # Extraire tous les prix disponibles pour les variants de ce produit
+        product_prices = []
+        for variant in variants:
+            variant_id = variant.get("variant_id")
+            if variant_id and variant_id in price_by_variant_id:
+                try:
+                    # Conversion "3,83" → 3.83 float
+                    price_str = price_by_variant_id[variant_id]["price"]
+                    price_float = float(price_str.replace(",", "."))
+                    product_prices.append(price_float)
+                except Exception:
+                    pass
+
+        # Choisir le prix le plus bas si dispo
+        final_price = min(product_prices) if product_prices else None
+
         base_info = {
             "product_name": product.get("product_name"),
             "master_code": product.get("master_code"),
@@ -616,16 +654,16 @@ def products_images_full():
             "long_description": product.get("long_description"),
             "brand": product.get("brand"),
             "material": product.get("material"),
-            # Remplacement de category_code par les niveaux de catégorie
-            "category_level1": product.get("variants", [{}])[0].get("category_level1"),
-            "category_level2": product.get("variants", [{}])[0].get("category_level2"),
-            "category_level3": product.get("variants", [{}])[0].get("category_level3"),
+            "price": final_price,  # Ajout du prix
+            "category_level1": variants[0].get("category_level1") if variants else None,
+            "category_level2": variants[0].get("category_level2") if variants else None,
+            "category_level3": variants[0].get("category_level3") if variants else None,
         }
 
         product_images = []
 
         # Images depuis variants > digital_assets
-        for variant in product.get("variants", []):
+        for variant in variants:
             for asset in variant.get("digital_assets", []):
                 if asset.get("type") == "image":
                     product_images.append({
@@ -650,18 +688,18 @@ def products_images_full():
                         "url": img.get("print_position_image_with_area")
                     })
 
-        # Tri optionnel pour mettre en premier les images principales
+        # Tri des images
         product_images.sort(key=lambda img: (
             0 if img.get("subtype") == "item_picture_front" else 1
         ))
 
-        # Ajout même si images est vide
         results.append({
             **base_info,
             "images": product_images
         })
 
     return jsonify({"products_with_images": results})
+
 
 
 
@@ -861,4 +899,4 @@ def add_product():
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)

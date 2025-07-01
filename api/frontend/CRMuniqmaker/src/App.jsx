@@ -5,7 +5,7 @@ import {
   FiHeart, FiFileText, FiPlus, FiEdit, FiTrash, FiStar, FiShoppingCart
 } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "http://localhost:5001";
 
 // Styles globaux CSS
 const globalStyles = `
@@ -472,7 +472,8 @@ function ProductCatalog({ token, userRole }) {
 
 const formData = new FormData();
 formData.append("name", product.product_name || `Produit ${productId}`);
-formData.append("price", 0);
+const doubledPrice = product.price ? product.price * 2 : "prix non disponible";
+formData.append("price", doubledPrice);
 formData.append("category_level1", product.category_level1 || "Catégorie par défaut");
 formData.append("category_level2", product.category_level2 || "Sous-catégorie par défaut");
 formData.append("category_level3", product.category_level3 || "Sous-sous-catégorie par défaut");
@@ -714,6 +715,10 @@ formData.append("image_url", product.images[0]?.url || "");
 
         <div className="p-4 text-sm text-gray-700 space-y-1">
           <h3 className="font-semibold text-gray-900 truncate">{name}</h3>
+          <h4 className="font-semibold text-gray-900 truncate">
+            {product.price ? `${product.price} €` : "Prix non disponible"}
+          </h4>
+
           <p><strong>Référence :</strong> {reference || "N/A"}</p>
           {product.brand && <p><strong>Marque :</strong> {product.brand}</p>}
           {product.material && <p><strong>Matériau :</strong> {product.material}</p>}

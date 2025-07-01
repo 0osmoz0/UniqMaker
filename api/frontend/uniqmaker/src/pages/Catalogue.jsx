@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { FiShoppingCart } from "react-icons/fi";
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5000";
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5001";
 
 const StarRating = ({ rating }) => {
   const fullStars = Math.floor(rating);

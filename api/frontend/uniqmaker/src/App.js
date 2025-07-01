@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import './index.css';
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "http://localhost:5001";
 
 function App() {
   const navigate = useNavigate();
