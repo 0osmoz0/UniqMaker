@@ -68,6 +68,7 @@ coverage/
 /midocean.db
 /backend/__pycache__/
 /backend/*.db
+/backend/midocean_crm.sqdpro
 /backend/*.db-journal
 /backend/*.env
 /frontend/uniqmaker/node_modules/
