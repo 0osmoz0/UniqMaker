@@ -72,5 +72,4 @@ coverage/
 /backend/*.env
 /frontend/uniqmaker/node_modules/
 /frontend/uniqmaker/dist/
-
-/static/uploads/
+/backend/static/uploads/
