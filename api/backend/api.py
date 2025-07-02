@@ -607,6 +607,14 @@ def products_images_full():
     """)
     pricelist_row = c.fetchone()
 
+    c.execute("""
+        SELECT data FROM api_data 
+        WHERE endpoint = 'stock' 
+        ORDER BY fetched_at DESC 
+        LIMIT 1
+    """)
+    stock_row = c.fetchone()
+
     conn.close()
 
     if not products_row:
@@ -620,6 +628,16 @@ def products_images_full():
 
     products = products_data.get("products", []) if isinstance(products_data, dict) else products_data
     prices = pricelist_data.get("price", []) if isinstance(pricelist_data, dict) else []
+
+    stock_data = json.loads(stock_row['data']) if stock_row else {}
+    stock_items = stock_data.get("stock", []) if isinstance(stock_data, dict) else []
+
+    stock_by_ref = {}
+    for item in stock_items:
+        sku = item.get("sku", "")
+        qty = item.get("qty", 0)
+        ref = sku.split("-")[0]  # Retirer le suffixe
+        stock_by_ref[ref] = stock_by_ref.get(ref, 0) + qty
 
     # Dictionnaire des prix par variant_id
     price_by_variant_id = {
@@ -655,6 +673,7 @@ def products_images_full():
             "brand": product.get("brand"),
             "material": product.get("material"),
             "price": final_price,  # Ajout du prix
+            "stock": stock_by_ref.get(product.get("master_code"), 0),
             "category_level1": variants[0].get("category_level1") if variants else None,
             "category_level2": variants[0].get("category_level2") if variants else None,
             "category_level3": variants[0].get("category_level3") if variants else None,

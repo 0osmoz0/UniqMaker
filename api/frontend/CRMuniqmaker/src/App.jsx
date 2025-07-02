@@ -474,6 +474,7 @@ const formData = new FormData();
 formData.append("name", product.product_name || `Produit ${productId}`);
 const doubledPrice = product.price ? product.price * 2 : "prix non disponible";
 formData.append("price", doubledPrice);
+formData.append("stock", product.stock || "stock indisponible")
 formData.append("category_level1", product.category_level1 || "Catégorie par défaut");
 formData.append("category_level2", product.category_level2 || "Sous-catégorie par défaut");
 formData.append("category_level3", product.category_level3 || "Sous-sous-catégorie par défaut");
@@ -718,6 +719,7 @@ formData.append("image_url", product.images[0]?.url || "");
           <h4 className="font-semibold text-gray-900 truncate">
             {product.price ? `${product.price} €` : "Prix non disponible"}
           </h4>
+          <h5 className="font-semibold text-gray-900 truncate">{product.stock ? `Stock: ${product.stock}` : "stock non disponible"}</h5>
 
           <p><strong>Référence :</strong> {reference || "N/A"}</p>
           {product.brand && <p><strong>Marque :</strong> {product.brand}</p>}
