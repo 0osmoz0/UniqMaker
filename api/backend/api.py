@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Blueprint, Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 import json
@@ -28,6 +28,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 API_KEY = os.getenv("API_KEY")
 JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
 app.config['SECRET_KEY'] = JWT_SECRET
+products_bp = Blueprint('products', __name__)
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
@@ -589,7 +590,6 @@ def products_images_full():
     conn = get_db()
     c = conn.cursor()
 
-    # Récupération des produits
     c.execute("""
         SELECT data FROM api_data 
         WHERE endpoint = 'products' 
@@ -598,7 +598,6 @@ def products_images_full():
     """)
     products_row = c.fetchone()
 
-    # Récupération de la liste des prix
     c.execute("""
         SELECT data FROM api_data 
         WHERE endpoint = 'pricelist' 
@@ -636,10 +635,9 @@ def products_images_full():
     for item in stock_items:
         sku = item.get("sku", "")
         qty = item.get("qty", 0)
-        ref = sku.split("-")[0]  # Retirer le suffixe
+        ref = sku.split("-")[0]
         stock_by_ref[ref] = stock_by_ref.get(ref, 0) + qty
 
-    # Dictionnaire des prix par variant_id
     price_by_variant_id = {
         item["variant_id"]: item for item in prices if "variant_id" in item
     }
@@ -648,21 +646,41 @@ def products_images_full():
 
     for product in products:
         variants = product.get("variants", [])
-
-        # Extraire tous les prix disponibles pour les variants de ce produit
         product_prices = []
+
+        variant_output = []
         for variant in variants:
             variant_id = variant.get("variant_id")
+            sku = variant.get("sku")
+            color = variant.get("color_description")
+            gtin = variant.get("gtin")
+            color_code = variant.get("color_code")
+
+            variant_images = []
+            for asset in variant.get("digital_assets", []):
+                if asset.get("type") == "image":
+                    variant_images.append({
+                        "subtype": asset.get("subtype"),
+                        "url": asset.get("url_highress") or asset.get("url")
+                    })
+
             if variant_id and variant_id in price_by_variant_id:
                 try:
-                    # Conversion "3,83" → 3.83 float
                     price_str = price_by_variant_id[variant_id]["price"]
                     price_float = float(price_str.replace(",", "."))
                     product_prices.append(price_float)
                 except Exception:
                     pass
 
-        # Choisir le prix le plus bas si dispo
+            variant_output.append({
+                "variant_id": variant_id,
+                "sku": sku,
+                "color": color,
+                "color_code": color_code,
+                "gtin": gtin,
+                "images": variant_images
+            })
+
         final_price = min(product_prices) if product_prices else None
 
         base_info = {
@@ -672,26 +690,15 @@ def products_images_full():
             "long_description": product.get("long_description"),
             "brand": product.get("brand"),
             "material": product.get("material"),
-            "price": final_price,  # Ajout du prix
+            "price": final_price,
             "stock": stock_by_ref.get(product.get("master_code"), 0),
             "category_level1": variants[0].get("category_level1") if variants else None,
             "category_level2": variants[0].get("category_level2") if variants else None,
             "category_level3": variants[0].get("category_level3") if variants else None,
         }
 
+        # Images depuis printing_positions (génériques au produit, pas aux variants)
         product_images = []
-
-        # Images depuis variants > digital_assets
-        for variant in variants:
-            for asset in variant.get("digital_assets", []):
-                if asset.get("type") == "image":
-                    product_images.append({
-                        "source": "variant.digital_assets",
-                        "subtype": asset.get("subtype"),
-                        "url": asset.get("url_highress") or asset.get("url"),
-                    })
-
-        # Images depuis printing_positions
         for position in product.get("printing_positions", []):
             for img in position.get("images", []):
                 if "print_position_image_blank" in img:
@@ -707,14 +714,15 @@ def products_images_full():
                         "url": img.get("print_position_image_with_area")
                     })
 
-        # Tri des images
+        # Tri des images générales
         product_images.sort(key=lambda img: (
             0 if img.get("subtype") == "item_picture_front" else 1
         ))
 
         results.append({
             **base_info,
-            "images": product_images
+            "images": product_images,
+            "variants": variant_output
         })
 
     return jsonify({"products_with_images": results})
@@ -803,7 +811,6 @@ def register():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-# Route pour obtenir les produits
 @app.route('/products', methods=['GET'])
 def get_products():
     conn = sqlite3.connect(DATABASE)
@@ -816,104 +823,86 @@ def get_products():
     products = []
     for row in rows:
         product = dict(row)
-        if product.get("image"):
-            product["image"] = request.host_url.rstrip("/") + product["image"]
+        
+        # Assurer que les champs JSON sont valides
+        for json_field in ['colors_json', 'images_json', 'images_by_color_json']:
+            try:
+                if product.get(json_field):
+                    json.loads(product[json_field])
+            except json.JSONDecodeError:
+                product[json_field] = '[]'
+        
+        # Corriger les URLs d'images
+        if product.get("image") and not product["image"].startswith(("http", "/")):
+            product["image"] = f"/uploads/{product['image']}"
+        
         products.append(product)
 
     return jsonify(products)
-
-# Route pour ajouter un produit
-@app.route('/products', methods=['POST'])
-def add_product():
+@products_bp.route('/products', methods=['POST'])
+def create_product():
     try:
-        # Récupérer les données du formulaire
         name = request.form.get('name')
-        price = request.form.get('price')
+        price = float(request.form.get('price', 0))
+        description = request.form.get('description')
         category_level1 = request.form.get('category_level1')
         category_level2 = request.form.get('category_level2')
         category_level3 = request.form.get('category_level3')
-        description = request.form.get('description')
-        stock = request.form.get('stock', 0)
-        image_url = request.form.get('image_url')  # URL de l'image
-
-        # Vérifier que le nom est bien présent
-        if not name:
-            return jsonify({'message': "Le champ 'name' est requis."}), 400
-
-        # Initialiser la variable image_path
+        stock = int(request.form.get('stock', 0))
+        colors_json = request.form.get('colors_json')
+        images_json = request.form.get('images_json')
+        images_by_color_json = request.form.get('images_by_color_json')
         image_path = None
 
-        # Si l'image provient d'une URL
-        if image_url:
-            response = requests.get(image_url)
-            if response.status_code == 200:
-                # Créer le dossier d'uploads si nécessaire
+        if 'image' in request.files:
+            image = request.files['image']
+            if image.filename != '':
+                filename = secure_filename(f"{uuid4().hex}_{image.filename}")
                 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                filename = secure_filename(image_url.split("/")[-1])
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                
-                # Sauvegarder l'image
-                with open(filepath, "wb") as f:
-                    f.write(response.content)
-                
-                # Définir le chemin de l'image relative
+                image.save(os.path.join(UPLOAD_FOLDER, filename))
                 image_path = f"/uploads/{filename}"
-            else:
-                return jsonify({'message': "Impossible de télécharger l'image."}), 400
-        else:
-            # Si aucune URL d'image n'est fournie, vérifier si un fichier est téléchargé
-            image_file = request.files.get('image_url')
-            if image_file:
-                # Sauvegarder le fichier téléchargé
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                filename = secure_filename(image_file.filename)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                image_file.save(filepath)
+        elif request.form.get('image_url'):
+            image_path = request.form.get('image_url')
 
-                # Définir le chemin de l'image relative
-                image_path = f"/uploads/{filename}"
-
-        # Insérer le produit dans la base de données
         conn = sqlite3.connect(DATABASE)
         c = conn.cursor()
         c.execute('''
-            INSERT INTO products (name, price, image, category_level1, category_level2, category_level3, description, stock)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO products (
+                name,
+                price,
+                image,
+                category_level1,
+                category_level2,
+                category_level3,
+                description,
+                stock,
+                colors_json,
+                images_json,
+                images_by_color_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             name,
             price,
             image_path,
-            category_level1 or "Non spécifié",
-            category_level2 or "Non spécifié",
-            category_level3 or "Non spécifié",
+            category_level1,
+            category_level2,
+            category_level3,
             description,
-            stock
+            stock,
+            colors_json,
+            images_json,
+            images_by_color_json
         ))
+
         conn.commit()
-        new_id = c.lastrowid
         conn.close()
 
-        # Préparer la réponse
-        new_product = {
-            'id': new_id,
-            'name': name,
-            'price': price,
-            'image': request.host_url.rstrip("/") + image_path if image_path else None,
-            'category_level1': category_level1,
-            'category_level2': category_level2,
-            'category_level3': category_level3,
-            'description': description,
-            'stock': stock
-        }
-
-        return jsonify(new_product), 201
+        return jsonify({'message': 'Produit ajouté avec succès'}), 201
 
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
-
-
-
+app.register_blueprint(products_bp)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { 
   FiLogIn, FiLogOut, FiLoader, FiAlertCircle, FiEye, FiEyeOff, 
   FiSearch, FiX, FiChevronLeft, FiChevronRight, FiUser, FiUsers,
-  FiHeart, FiFileText, FiPlus, FiEdit, FiTrash, FiStar, FiShoppingCart
+  FiHeart, FiFileText, FiPlus, FiEdit, FiTrash, FiStar, FiShoppingCart,
+  FiImage
 } from "react-icons/fi";
 
 const API_BASE = "http://localhost:5001";
@@ -327,54 +328,280 @@ function Dashboard({ token, onLogout }) {
     </div>
   );
 }
+const COLOR_MAP = {
+  "Abricot": "#FBCEB1",
+  "Anthracite": "#383E42",
+  "Anthracite Chine": "#464646",
+  "Aqua": "#00FFFF",
+  "Argent": "#C0C0C0",
+  "Argent Brillant": "#E6E8FA",
+  "Argent Mat": "#B6B6B6",
+  "Army": "#4B5320",
+  "Astral Purple": "#5D4D7A",
+  "Beige": "#F5F5DC",
+  "Beige Chine": "#E1C699",
+  "Beige Fonce": "#D2B48C",
+  "Beige/Rouge": "#F5F5DC",
+  "Blanc": "#FFFFFF",
+  "Blanc 2": "#F8F8FF",
+  "Blanc Absolu": "#FFFFFF",
+  "Blanc Cassé": "#F5F5F5",
+  "Blanc Chiné": "#F5F5F5",
+  "Blanc Recyclé": "#F5F5F5",
+  "Blanc Transparent": "#FFFFFF",
+  "Blanc/Bleu": "#E6F1F7",
+  "Blanc/Bleu Foncé": "#D6E0E7",
+  "Blanc/Gris": "#E5E5E5",
+  "Blanc/Jaune Néon": "#FFFFCC",
+  "Blanc/Marine": "#E6E6FA",
+  "Blanc/Noir": "#F2F2F2",
+  "Blanc/Rouge": "#FFE6E6",
+  "Blanc/Turquoise": "#E0FFFF",
+  "Bleu": "#0000FF",
+  "Bleu Abysse": "#00008B",
+  "Bleu Arctique": "#B0E0E6",
+  "Bleu Ardoise": "#6A5ACD",
+  "Bleu Atoll": "#00B7EB",
+  "Bleu Bébé": "#89CFF0",
+  "Bleu Canard": "#007791",
+  "Bleu Caraibes": "#1E90FF",
+  "Bleu Ciel Chine": "#87CEEB",
+  "Bleu Clair Transparent": "#ADD8E6",
+  "Bleu Cremeux": "#B0C4DE",
+  "Bleu Glacier": "#E1F5FE",
+  "Bleu Marine": "#000080",
+  "Bleu Petrole": "#005F6A",
+  "Bleu Royal": "#4169E1",
+  "Bleu Transparent": "#E6F1F7",
+  "Bleu/Blanc": "#E6F1F7",
+  "Bois": "#966F33",
+  "Bordeaux": "#800020",
+  "Champagne": "#F7E7CE",
+  "Chili": "#E03C31",
+  "Chocolat": "#7B3F00",
+  "Chocolat Fonce": "#5A3A22",
+  "Ciel": "#87CEEB",
+  "Ciel Piqué": "#B0E2FF",
+  "Citron": "#FFF44F",
+  "Corail Fluo": "#FF7F50",
+  "Corde": "#BA7C45",
+  "Couleurs Assorties": "#FFD700",
+  "Creme": "#FFFDD0",
+  "Cuivré": "#B87333",
+  "Denim": "#1560BD",
+  "Denim Chine": "#1E4D6B",
+  "Ecru": "#F5F3E5",
+  "Emeraude": "#50C878",
+  "Folk Pink Twin": "#FFB6C1",
+  "Folk Red Twin": "#FF0000",
+  "French Marine": "#3B5998",
+  "French Marine 2": "#3B5998",
+  "French Marine/Blanc": "#3B5998",
+  "Fuchsia": "#FF00FF",
+  "Fuchsia Transparent": "#FF00FF",
+  "Fuschia Fluo": "#FF00FF",
+  "Gris": "#808080",
+  "Gris 2": "#A9A9A9",
+  "Gris Anthracite": "#383E42",
+  "Gris Carbone": "#625D5D",
+  "Gris Chiné": "#A9A9A9",
+  "Gris Chiné II": "#A9A9A9",
+  "Gris Chiné Recyclé": "#A9A9A9",
+  "Gris Clair": "#D3D3D3",
+  "Gris Fonce": "#696969",
+  "Gris Foncé/Gris": "#696969",
+  "Gris Metal": "#A8A8A8",
+  "Gris Pierre": "#8B8B8B",
+  "Gris Pur": "#808080",
+  "Gris Souris": "#9E9E9E",
+  "Gris Transparent": "#D3D3D3",
+  "Hibiscus": "#B43757",
+  "Ivoire": "#FFFFF0",
+  "Jaune": "#FFFF00",
+  "Jaune Clair": "#FFFFE0",
+  "Jaune Fluo": "#FFFF00",
+  "Jaune Pâle": "#FFFF99",
+  "Jaune Transparent": "#FFFFE0",
+  "Kaki": "#C3B091",
+  "Kaki Chiné": "#C3B091",
+  "Kaki Foncé": "#8B864E",
+  "Lilas": "#C8A2C8",
+  "Lime": "#00FF00",
+  "Lime Fluo": "#32CD32",
+  "Linen Twin": "#FAF0E6",
+  "Marine": "#000080",
+  "Marine Recyclé": "#000080",
+  "Marron": "#800000",
+  "Multicolore": "#FFD700",
+  "Naturel": "#F5DEB3",
+  "Noir": "#000000",
+  "Noir 2": "#0A0A0A",
+  "Noir Profond": "#000000",
+  "Noir Recyclé": "#000000",
+  "Noir/Blanc": "#000000",
+  "Noir/Bleu": "#000000",
+  "Noir/Lime": "#000000",
+  "Noir/Rouge": "#000000",
+  "Or": "#FFD700",
+  "Or Mat": "#D4AF37",
+  "Orange": "#FFA500",
+  "Orange 2": "#FF8C00",
+  "Orange Brulee": "#CC5500",
+  "Orange Fluo": "#FFA500",
+  "Orange Transparent": "#FFA500",
+  "Outremer": "#120A8F",
+  "Oxblood Chine": "#800020",
+  "Peche": "#FFDAB9",
+  "Petrole": "#005F6A",
+  "Pool Blue": "#7CB9E8",
+  "Pop Orange": "#FF9F00",
+  "Ribbon Pink": "#FFC0CB",
+  "Rose": "#FF007F",
+  "Rose Bonbon": "#F9429E",
+  "Rose Bébé": "#F4C2C2",
+  "Rose Chine": "#E75480",
+  "Rose Cremeux": "#FFE4E1",
+  "Rose Fluo 2": "#FF007F",
+  "Rose Moyen": "#C21E56",
+  "Rose Orchidée": "#DA70D6",
+  "Rose Pâle": "#FFD1DC",
+  "Rose Transparent": "#FFE4E1",
+  "Rouge": "#FF0000",
+  "Rouge 2": "#DC143C",
+  "Rouge Piment": "#FF0000",
+  "Rouge Recyclé": "#FF0000",
+  "Rouge Tango": "#FF4D00",
+  "Rouge Transparent": "#FF0000",
+  "Rouge Vif": "#FF0000",
+  "Royal": "#4169E1",
+  "Royal 3": "#4169E1",
+  "Royal Recyclé": "#4169E1",
+  "Sable": "#F4A460",
+  "Taupe": "#483C32",
+  "Terracotta": "#E2725B",
+  "Terre": "#E2725B",
+  "Tilleul": "#BAB86C",
+  "Titanium": "#878681",
+  "Transparent": "#FFFFFF",
+  "Turquoise": "#40E0D0",
+  "Vert": "#008000",
+  "Vert 2": "#00FF00",
+  "Vert Armée Vert": "#4B5320",
+  "Vert Bouteille": "#006A4E",
+  "Vert Clair Chine": "#90EE90",
+  "Vert Cremeux": "#8FBC8F",
+  "Vert Empire": "#245336",
+  "Vert Fluo": "#00FF00",
+  "Vert Foncé": "#023020",
+  "Vert Foncé 2": "#013220",
+  "Vert Foret": "#228B22",
+  "Vert Glace": "#C1E1C1",
+  "Vert Golf": "#008000",
+  "Vert Lime Transparent": "#00FF00",
+  "Vert Menthe": "#3EB489",
+  "Vert Pomme": "#8DB600",
+  "Vert Prairie": "#7CFC00",
+  "Vert Prairie /Blanc": "#7CFC00",
+  "Vert Printemps": "#00FF7F",
+  "Vert Sapin": "#0A5C36",
+  "Vert Transparent": "#90EE90",
+  "Vieux Rose": "#C08081",
+  "Violet": "#8A2BE2",
+  "Violet Clair": "#EE82EE",
+  "Violet Fonce": "#9400D3",
+  "Violet Transparent": "#EE82EE",
+  "Zinc": "#7D7D7D"
+};
+
+// Fonction utilitaire améliorée pour obtenir le code hexadécimal
+const getColorHex = (colorName) => {
+  if (!colorName) return "#CCCCCC";
+  
+  // Normalisation du nom de couleur
+  const normalize = (str) => str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const normalizedInput = normalize(colorName);
+  
+  // Recherche insensible à la casse et aux accents
+  for (const [key, value] of Object.entries(COLOR_MAP)) {
+    if (normalize(key) === normalizedInput) {
+      return value;
+    }
+  }
+  
+  return "#CCCCCC"; // Couleur par défaut
+};
 
 function ProductCatalog({ token, userRole }) {
+  // États
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(12);
+  const [selectedVariants, setSelectedVariants] = useState({});
+  const [modalData, setModalData] = useState({
+    open: false,
+    product: null,
+    imageIndex: 0
+  });
 
+  // Refs
   const searchInputRef = useRef(null);
-  const modalRef = useRef(null);
 
-  // Récupération des produits avec images
+  // Fetch products data
   useEffect(() => {
-    async function fetchProducts() {
-      setLoading(true);
-      setError("");
+    const fetchProducts = async () => {
       try {
+        setLoading(true);
+        setError("");
         const response = await fetch(`${API_BASE}/products/images/full`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const data = await response.json();
-
-        console.log(data)
-
-        if (response.ok) {
-          setProducts(data.products_with_images || []);
-        } else {
-          setError(data.message || "Erreur lors du chargement des images");
+        
+        if (!response.ok) {
+          throw new Error(response.statusText || "Erreur de chargement");
         }
-      } catch {
-        setError("Erreur de connexion au serveur");
+        
+        const data = await response.json();
+        
+        if (!data.products_with_images) {
+          throw new Error("Format de données inattendu");
+        }
+        
+        setProducts(data.products_with_images);
+        
+        // Initialiser les variantes sélectionnées
+        const variants = {};
+        data.products_with_images.forEach(product => {
+          if (product.variants?.length > 0) {
+            variants[product.master_code] = product.variants[0];
+          }
+        });
+        setSelectedVariants(variants);
+        
+      } catch (err) {
+        console.error("Erreur fetchProducts:", err);
+        setError(err.message || "Erreur de connexion au serveur");
       } finally {
         setLoading(false);
       }
-    }
+    };
+
     fetchProducts();
   }, [token]);
 
-  // Filtrer les produits selon la recherche
-  const filteredProducts = products.filter((product) =>
+  // Filter products based on search term
+  const filteredProducts = products.filter(product => 
     [product.product_name, product.master_code, product.brand]
       .filter(Boolean)
-      .some((field) =>
-        field.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      .some(field => field.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Pagination
@@ -383,455 +610,533 @@ function ProductCatalog({ token, userRole }) {
   const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
-  // Navigation dans la modal (clavier)
-  const handleKeyDown = (e) => {
-    if (!selectedImage) return;
-
-    if (e.key === "Escape") setSelectedImage(null);
-    else if (e.key === "ArrowRight") navigateImage(1);
-    else if (e.key === "ArrowLeft") navigateImage(-1);
-  };
-
-  // Naviguer entre les images dans la modal
-  const navigateImage = (direction) => {
-    const newIndex =
-      (currentIndex + direction + filteredProducts.length) % filteredProducts.length;
-    setCurrentIndex(newIndex);
-    setSelectedImage(filteredProducts[newIndex].images[0]?.url || null);
-  };
-
-  // Gérer la modal : mise à jour index image et overflow body + écoute clavier
-  useEffect(() => {
-    if (selectedImage) {
-      const index = filteredProducts.findIndex(
-        (p) => p.images[0]?.url === selectedImage
-      );
-      setCurrentIndex(index);
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
+  // Get display images for product
+  const getDisplayImages = (product) => {
+    if (!product) return [];
+    
+    const variant = selectedVariants[product.master_code];
+    if (variant?.images?.length > 0) {
+      return variant.images;
     }
+    return product.images || [];
+  };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedImage, filteredProducts]);
-
-  // Fermer la modal en cliquant en dehors
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
-        setSelectedImage(null);
+  // Get available colors for product
+  const getAvailableColors = (product) => {
+    if (!product.variants) return [];
+    
+    const colors = [];
+    const seenColors = new Set();
+    
+    product.variants.forEach(variant => {
+      // Essayer plusieurs clés possibles pour la couleur
+      const colorName = variant.color || variant.color_name || variant.colour;
+      const colorCode = variant.color_code || variant.color_id || colorName;
+      
+      if (colorName && colorCode && !seenColors.has(colorCode)) {
+        seenColors.add(colorCode);
+        colors.push({
+          name: colorName,
+          code: colorCode,
+          hex: getColorHex(colorName),
+          variant: variant
+        });
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    });
+    
+    return colors;
+  };
 
-  // Ajouter un produit aux favoris
+  // Handle color selection
+  const handleColorSelect = (product, color) => {
+    setSelectedVariants(prev => ({
+      ...prev,
+      [product.master_code]: color.variant
+    }));
+  };
+
+  // Open image modal
+  const openImageModal = (product, imageIndex = 0) => {
+    setModalData({
+      open: true,
+      product,
+      imageIndex
+    });
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setModalData(prev => ({ ...prev, open: false }));
+  };
+
+  // Add to favorites
   const addToFavorites = async (product) => {
     try {
-      const productId = product.master_code || product.id || null;
-      if (!productId) {
-        alert("Produit invalide");
-        return;
-      }
-
       const response = await fetch(`${API_BASE}/favorites`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          product_id: productId,
-          product_name: product.product_name || `Produit ${productId}`,
-        }),
+          product_id: product.master_code,
+          product_name: product.product_name
+        })
       });
 
-      if (response.ok) {
-        alert("Produit ajouté aux favoris !");
-      } else {
-        const data = await response.json();
-        alert(data.message || "Erreur lors de l'ajout aux favoris");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erreur d'ajout aux favoris");
       }
-    } catch {
-      alert("Erreur de connexion au serveur");
+      
+      alert("Produit ajouté aux favoris !");
+    } catch (err) {
+      console.error("Erreur addToFavorites:", err);
+      alert(err.message || "Une erreur est survenue");
     }
   };
 
-  const addToCatalog = async (product) => {
-  if (!window.confirm("Voulez-vous vraiment ajouter ce produit au catalogue ?"))
-    return;
+const addToCatalog = async (product) => {
+  if (!window.confirm(`Ajouter "${product.product_name}" au catalogue ?`)) return;
 
   try {
-    const productId = product.master_code || product.id || null;
-    if (!productId) {
-      alert("Produit invalide");
-      return;
+    const variants = product.variants || [];
+
+    // 1. Préparation des images groupées par couleur
+    const imagesByColor = variants.reduce((acc, variant) => {
+      // Ignorer les variants sans couleur ou sans images
+      if (!variant.color || !variant.images) return acc;
+      
+      const color = variant.color.trim();
+      if (!color) return acc;
+      
+      // Extraire les URLs valides
+      const urls = variant.images
+        .map(img => img.url)
+        .filter(url => url && typeof url === 'string');
+      
+      if (urls.length === 0) return acc;
+      
+      // Ajouter au tableau
+      acc.push({
+        color: color,
+        images: urls
+      });
+      
+      return acc;
+    }, []);
+
+    // 2. Création de la liste plate de toutes les images
+    const allImages = imagesByColor.flatMap(({images}) => 
+      images.map(url => ({ url }))
+      .concat(product.image ? [{ url: product.image }] : []));
+
+    // 3. Extraction des couleurs uniques
+    const colors = [...new Set(imagesByColor.map(({color}) => color))];
+
+    // 4. Téléchargement de l'image principale
+    let imageFile = null;
+    const mainImageUrl = allImages[0]?.url;
+    
+    if (mainImageUrl) {
+      try {
+        const imageResponse = await fetch(mainImageUrl);
+        const blob = await imageResponse.blob();
+        imageFile = new File([blob], `${product.master_code}.jpg`, { type: blob.type });
+      } catch (imgErr) {
+        console.warn("Erreur de téléchargement de l'image:", imgErr);
+      }
     }
 
-const formData = new FormData();
-formData.append("name", product.product_name || `Produit ${productId}`);
-const doubledPrice = product.price ? product.price * 2 : "prix non disponible";
-formData.append("price", doubledPrice);
-formData.append("stock", product.stock || "stock indisponible")
-formData.append("category_level1", product.category_level1 || "Catégorie par défaut");
-formData.append("category_level2", product.category_level2 || "Sous-catégorie par défaut");
-formData.append("category_level3", product.category_level3 || "Sous-sous-catégorie par défaut");
-formData.append("description", product.long_description || "Pas de description disponible");
-formData.append("stock", 0);
-formData.append("image_url", product.images[0]?.url || "");
+    // 5. Préparation des données pour l'API
+    const formData = new FormData();
+    formData.append("name", product.product_name);
+    formData.append("price", product.price || 0);
+    formData.append("description", product.long_description || product.short_description || "");
+    formData.append("category_level1", product.category_level1 || "Non spécifié");
+    formData.append("category_level2", product.category_level2 || "Non spécifié");
+    formData.append("category_level3", product.category_level3 || "Non spécifié");
+    formData.append("stock", product.stock || 0);
+    formData.append("colors_json", JSON.stringify(colors));
+    formData.append("images_json", JSON.stringify(allImages));
+    formData.append("images_by_color_json", JSON.stringify(imagesByColor));
 
+    // 6. Ajout de l'image (fichier ou URL)
+    if (imageFile) {
+      formData.append("image", imageFile);
+    } else if (mainImageUrl) {
+      formData.append("image_url", mainImageUrl);
+    }
 
+    // 7. Envoi à l'API
     const response = await fetch(`${API_BASE}/products`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        // Pas de Content-Type, FormData s'en charge
       },
       body: formData,
     });
 
-    if (response.ok) {
-      alert("Produit ajouté au catalogue avec succès !");
-    } else {
-      const data = await response.json();
-      alert(data.message || "Erreur lors de l'ajout au catalogue");
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Erreur lors de l'ajout");
     }
-  } catch (error) {
-    console.error(error);
-    alert("Erreur de connexion au serveur ou lors du traitement");
+
+    alert("Produit ajouté au catalogue avec succès !");
+  } catch (err) {
+    console.error("Erreur addToCatalog:", err);
+    alert(err.message || "Une erreur est survenue");
   }
 };
 
 
 
-  // Changement de page
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Composant pagination
-  const Pagination = () => {
+  // Render pagination controls
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    
+    const pages = [];
     const maxVisible = 5;
-    const halfVisible = Math.floor(maxVisible / 2);
-
-    let startPage = Math.max(1, currentPage - halfVisible);
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
     if (endPage - startPage + 1 < maxVisible) {
       startPage = Math.max(1, endPage - maxVisible + 1);
     }
 
-    const pages = [];
-    if (startPage > 1) {
-      pages.push(1);
-      if (startPage > 2) pages.push("...");
-    }
-
+    if (startPage > 1) pages.push(1);
+    if (startPage > 2) pages.push("...");
+    
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) pages.push("...");
-      pages.push(totalPages);
-    }
+    
+    if (endPage < totalPages - 1) pages.push("...");
+    if (endPage < totalPages) pages.push(totalPages);
 
     return (
-      <div className="mt-8 flex justify-center animate-fade">
-        <nav className="inline-flex items-center space-x-1" aria-label="Pagination">
+      <div className="flex justify-center mt-8">
+        <nav className="flex items-center gap-1">
           <button
-            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`px-3 py-1 rounded-md border border-gray-300 ${
-              currentPage === 1
-                ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                : "text-gray-700 hover:bg-gray-50 bg-white"
-            }`}
+            className="px-3 py-1 border rounded disabled:opacity-50"
           >
-            &lt; Précédent
+            Précédent
           </button>
-
-          {pages.map((page, idx) =>
-            page === "..." ? (
-              <span key={`dots-${idx}`} className="px-3 py-1 text-gray-700">
-                ...
-              </span>
-            ) : (
-              <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`px-3 py-1 rounded-md border text-sm font-medium ${
-                  page === currentPage
-                    ? "z-10 bg-indigo-600 border-indigo-600 text-white"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                {page}
-              </button>
-            )
-          )}
-
+          
+          {pages.map((page, i) => (
+            <button
+              key={i}
+              onClick={() => typeof page === 'number' ? handlePageChange(page) : null}
+              className={`px-3 py-1 border rounded ${
+                page === currentPage ? 'bg-indigo-600 text-white border-indigo-600' : ''
+              } ${typeof page !== 'number' ? 'pointer-events-none' : ''}`}
+            >
+              {page}
+            </button>
+          ))}
+          
           <button
-            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`px-3 py-1 rounded-md border border-gray-300 ${
-              currentPage === totalPages
-                ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                : "text-gray-700 hover:bg-gray-50 bg-white"
-            }`}
+            className="px-3 py-1 border rounded disabled:opacity-50"
           >
-            Suivant &gt;
+            Suivant
           </button>
         </nav>
       </div>
     );
   };
 
-  return (
-    <>
-      {/* En-tête et barre de recherche */}
-      <div className="mb-8 flex justify-between items-center animate-fade" style={{ animationDelay: "0.2s" }}>
-        <h2 className="text-lg font-medium text-gray-900">
-          {filteredProducts.length} produit{filteredProducts.length > 1 ? "s" : ""} trouvé{filteredProducts.length > 1 ? "s" : ""}
-        </h2>
-
-        <div className="flex items-center space-x-4">
-          {/* Sélecteur nombre d’items par page */}
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Produits par page :</span>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="border border-gray-200 rounded-md px-2 py-1 text-sm"
-            >
-              {[10, 20, 50, 100].map((num) => (
-                <option key={num} value={num}>
-                  {num}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Barre de recherche */}
-          <div className="relative w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiSearch className="text-gray-400" />
-            </div>
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Rechercher..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500 shadow-sm hover:border-gray-300 transition-smooth w-full"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  searchInputRef.current.focus();
-                }}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-smooth"
-                aria-label="Effacer la recherche"
-              >
-                <FiX />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Affichage du contenu */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center animate-fade">
-            <FiLoader className="animate-spin text-indigo-600 text-4xl mb-4" />
-            <p className="text-gray-600">Chargement du catalogue...</p>
-          </div>
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm animate-fade">
-          <div className="flex items-center">
-            <FiAlertCircle className="text-red-500 mr-2 flex-shrink-0" />
-            <p className="text-red-700 font-medium">{error}</p>
-          </div>
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="text-center py-12 animate-fade">
-          <div className="inline-block p-6 bg-white rounded-xl shadow-sm border border-gray-100">
-            <p className="text-gray-500 text-lg">Aucun produit ne correspond à votre recherche</p>
-            <button
-              onClick={() => setSearchTerm("")}
-              className="mt-4 text-indigo-600 hover:text-indigo-800 font-medium transition-smooth hover:underline"
-            >
-              Réinitialiser la recherche
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Grille des produits */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {currentItems.map((product, i) => {
-    const imageUrl = product.images[0]?.url;
-    const reference = product.master_code;
-    const name = product.product_name || `Produit ${indexOfFirstItem + i + 1}`;
-
-       // Get category levels dynamically
-    const category_level1 = product.category_level1;
-    const category_level2 = product.category_level2;
-    const category_level3 = product.category_level3;
-
-
-    console.log("Product:", name);
-    console.log("Category Level 1:", category_level1);  // Utilise category_level1 ici
-    console.log("Category Level 2:", category_level2);  // Utilise category_level2 ici
-    console.log("Category Level 3:", category_level3); 
+  // Render color swatches
+  const renderColorSwatches = (product) => {
+    const colors = getAvailableColors(product);
+    if (colors.length === 0) return null;
 
     return (
-      <div
-        key={product.master_code || i}
-        className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-smooth cursor-pointer group relative animate-fade will-change-transform"
-        style={{ animationDelay: `${i * 0.05}s` }}
-        onClick={() => imageUrl && setSelectedImage(imageUrl)}
-        aria-label={`Voir les détails du produit ${name}`}
-      >
-        <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-smooth duration-500"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-smooth"></div>
-        </div>
-
-        <div className="p-4 text-sm text-gray-700 space-y-1">
-          <h3 className="font-semibold text-gray-900 truncate">{name}</h3>
-          <h4 className="font-semibold text-gray-900 truncate">
-            {product.price ? `${product.price} €` : "Prix non disponible"}
-          </h4>
-          <h5 className="font-semibold text-gray-900 truncate">{product.stock ? `Stock: ${product.stock}` : "stock non disponible"}</h5>
-
-          <p><strong>Référence :</strong> {reference || "N/A"}</p>
-          {product.brand && <p><strong>Marque :</strong> {product.brand}</p>}
-          {product.material && <p><strong>Matériau :</strong> {product.material}</p>}
-          {/* Conditionally render category levels */}
-           {/* Conditionally render category levels */}
-          {category_level1 && (
-            <p><strong>Catégorie Niveau 1 :</strong> {category_level1}</p>
-          )}
-          {category_level2 && (
-            <p><strong>Catégorie Niveau 2 :</strong> {category_level2}</p>
-          )}
-          {category_level3 && (
-            <p><strong>Catégorie Niveau 3 :</strong> {category_level3}</p>
-          )}
-
-          {product.short_description && (
-            <p className="italic text-gray-600 truncate" title={product.short_description}>
-              {product.short_description}
-            </p>
-          )}
-
-          {product.long_description && (
-            <p className="text-gray-500 max-h-20 overflow-auto mt-1 whitespace-pre-wrap" title={product.long_description}>
-              {product.long_description}
-            </p>
-          )}
-        </div>
-
-        {/* Boutons d'action */}
-        <div className="absolute top-2 right-2 flex flex-col space-y-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              addToFavorites(product);
-            }}
-            className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
-            title="Ajouter aux favoris"
-            aria-label={`Ajouter ${name} aux favoris`}
-          >
-            <FiStar className="text-indigo-600" />
-          </button>
-
-          {userRole === "admin" && (
+      <div className="mt-2">
+        <div className="flex flex-wrap gap-1">
+          {colors.map((color, i) => (
             <button
+              key={`${product.master_code}-${color.code}-${i}`}
+              className="w-5 h-5 rounded-full border-2 border-gray-200 hover:border-indigo-300 transition-all"
+              style={{
+                backgroundColor: color.hex,
+                ...(selectedVariants[product.master_code]?.color_code === color.code ? {
+                  borderColor: '#6366f1',
+                  boxShadow: '0 0 0 1px #818cf8'
+                } : {})
+              }}
+              title={color.name}
               onClick={(e) => {
                 e.stopPropagation();
-                addToCatalog(product);
+                handleColorSelect(product, color);
               }}
-              className="p-2 bg-white/80 rounded-full hover:bg-white transition-smooth"
-              title="Ajouter au catalogue"
-              aria-label={`Ajouter ${name} au catalogue`}
-            >
-              <FiPlus className="text-green-600" />
-            </button>
-          )}
+              aria-label={`Sélectionner la couleur ${color.name}`}
+            />
+          ))}
         </div>
       </div>
     );
-  })}
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6">
+      {/* Search and filter section */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="w-full md:w-1/3">
+          <div className="relative">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Rechercher un produit..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <FiSearch className="absolute left-3 top-3 text-gray-400" />
+          </div>
+        </div>
+        
+        <div className="text-sm text-gray-600">
+          {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''} trouvé{filteredProducts.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <FiLoader className="animate-spin text-indigo-600 text-4xl" />
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+          <div className="flex items-center">
+            <FiAlertCircle className="text-red-500 mr-2" />
+            <p>{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && filteredProducts.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">Aucun produit ne correspond à votre recherche</p>
+          <button
+            onClick={() => setSearchTerm("")}
+            className="mt-2 text-indigo-600 hover:underline"
+          >
+            Réinitialiser la recherche
+          </button>
+        </div>
+      )}
+
+      {/* Products grid */}
+      {!loading && !error && filteredProducts.length > 0 && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {currentItems.map(product => {
+              const images = getDisplayImages(product);
+              const mainImage = images[0]?.url;
+
+              return (
+                <div 
+                  key={product.master_code} 
+                  className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow"
+                >
+                  {/* Product image */}
+                  <div 
+                    className="relative h-48 bg-gray-50 cursor-pointer"
+                    onClick={() => openImageModal(product)}
+                  >
+                    {mainImage ? (
+                      <img
+                        src={mainImage}
+                        alt={product.product_name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/300?text=Image+Non+Disponible';
+                          e.target.className = 'w-full h-full object-cover';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <FiImage size={48} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Product info */}
+                  <div className="p-3">
+                    <h3 className="font-medium text-gray-900 truncate">
+                      {product.product_name}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {product.price ? `${product.price.toFixed(2)} €` : 'Prix sur demande'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Ref: {product.master_code}
+                    </p>
+
+                    {/* Color variants */}
+                    {renderColorSwatches(product)}
+
+                    {/* Action buttons */}
+                    <div className="flex justify-between mt-3 pt-2 border-t border-gray-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToFavorites(product);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-800 p-1"
+                        title="Ajouter aux favoris"
+                      >
+                        <FiStar />
+                      </button>
+                      
+                      {userRole === "admin" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCatalog(product);
+                          }}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Ajouter au catalogue"
+                        >
+                          <FiPlus />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && <Pagination />}
-
-          {/* Modal d’affichage de l’image */}
-          {selectedImage && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 animate-fade"
-              aria-modal="true"
-              role="dialog"
-              aria-labelledby="modal-title"
-            >
-              <div
-                ref={modalRef}
-                className="relative max-w-5xl max-h-full mx-4 rounded-xl overflow-hidden shadow-lg bg-gray-900"
-              >
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="absolute top-2 right-2 p-2 rounded-full bg-gray-700 hover:bg-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  aria-label="Fermer la fenêtre d’image"
-                >
-                  <FiX size={24} />
-                </button>
-
-                <img
-                  src={selectedImage}
-                  alt={`Produit agrandi ${currentIndex + 1}`}
-                  className="max-h-[80vh] w-auto max-w-full rounded-lg mx-auto block"
-                />
-
-                <button
-                  onClick={() => navigateImage(-1)}
-                  className="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-gray-700 hover:bg-gray-600 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  aria-label="Image précédente"
-                >
-                  <FiChevronLeft size={30} />
-                </button>
-
-                <button
-                  onClick={() => navigateImage(1)}
-                  className="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-gray-700 hover:bg-gray-600 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  aria-label="Image suivante"
-                >
-                  <FiChevronRight size={30} />
-                </button>
-              </div>
-            </div>
-          )}
+          {renderPagination()}
         </>
       )}
-    </>
+
+      {/* Image modal */}
+      {modalData.open && modalData.product && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
+          <div className="relative bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 z-10 text-gray-700 hover:text-gray-900 bg-white rounded-full p-1 shadow"
+            >
+              <FiX size={24} />
+            </button>
+
+            <div className="flex flex-col md:flex-row h-full">
+              {/* Main image */}
+              <div className="md:w-2/3 p-4 flex items-center justify-center bg-gray-50">
+                {getDisplayImages(modalData.product).length > 0 ? (
+                  <img
+                    src={getDisplayImages(modalData.product)[modalData.imageIndex]?.url}
+                    alt={modalData.product.product_name}
+                    className="max-h-[70vh] object-contain"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/800x600?text=Image+Non+Disponible';
+                    }}
+                  />
+                ) : (
+                  <div className="text-gray-400 text-center">
+                    <FiImage size={64} className="mx-auto" />
+                    <p>Aucune image disponible</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Product details */}
+              <div className="md:w-1/3 p-6 overflow-y-auto">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {modalData.product.product_name}
+                </h2>
+                
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <h3 className="font-medium text-gray-900">Référence</h3>
+                    <p className="text-gray-600">{modalData.product.master_code}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-gray-900">Prix</h3>
+                    <p className="text-gray-600">
+                      {modalData.product.price ? `${modalData.product.price.toFixed(2)} €` : 'Sur demande'}
+                    </p>
+                  </div>
+                  
+                  {modalData.product.brand && (
+                    <div>
+                      <h3 className="font-medium text-gray-900">Marque</h3>
+                      <p className="text-gray-600">{modalData.product.brand}</p>
+                    </div>
+                  )}
+                  
+                  {modalData.product.material && (
+                    <div>
+                      <h3 className="font-medium text-gray-900">Matériau</h3>
+                      <p className="text-gray-600">{modalData.product.material}</p>
+                    </div>
+                  )}
+                  
+                  {modalData.product.short_description && (
+                    <div>
+                      <h3 className="font-medium text-gray-900">Description</h3>
+                      <p className="text-gray-600">{modalData.product.short_description}</p>
+                    </div>
+                  )}
+                  
+                  {/* Color variants in modal */}
+                  {getAvailableColors(modalData.product).length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-gray-900">Couleurs disponibles</h3>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {getAvailableColors(modalData.product).map((color, i) => (
+                          <button
+                            key={`modal-${modalData.product.master_code}-${color.code}-${i}`}
+                            className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-indigo-300 transition-all"
+                            style={{
+                              backgroundColor: color.hex,
+                              ...(selectedVariants[modalData.product.master_code]?.color_code === color.code ? {
+                                borderColor: '#6366f1',
+                                boxShadow: '0 0 0 2px #818cf8'
+                              } : {})
+                            }}
+                            title={color.name}
+                            onClick={() => {
+                              handleColorSelect(modalData.product, color);
+                              setModalData(prev => ({
+                                ...prev,
+                                imageIndex: 0
+                              }));
+                            }}
+                            aria-label={`Sélectionner la couleur ${color.name}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

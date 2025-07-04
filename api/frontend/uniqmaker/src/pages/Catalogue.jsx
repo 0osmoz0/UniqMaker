@@ -1,5 +1,17 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { FiShoppingCart, FiChevronDown, FiChevronUp, FiFilter, FiX, FiSearch, FiHeart, FiStar } from "react-icons/fi";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { 
+  FiShoppingCart, 
+  FiChevronDown, 
+  FiChevronUp, 
+  FiFilter, 
+  FiX, 
+  FiSearch, 
+  FiHeart, 
+  FiStar,
+  FiChevronLeft,
+  FiChevronRight,
+  FiImage
+} from "react-icons/fi";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import ReactLoading from 'react-loading';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
@@ -7,7 +19,201 @@ import 'react-lazy-load-image-component/src/effects/blur.css';
 
 const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:5001";
 
-// Composant StarRating amélioré avec animations
+const colorNameToHex = (colorName) => {
+  if (!colorName) return "#CCCCCC";
+
+  const colors = {
+      "Abricot": "#FBCEB1",
+  "Anthracite": "#383E42",
+  "Anthracite Chine": "#464646",
+  "Aqua": "#00FFFF",
+  "Argent": "#C0C0C0",
+  "Argent Brillant": "#E6E8FA",
+  "Argent Mat": "#B6B6B6",
+  "Army": "#4B5320",
+  "Astral Purple": "#5D4D7A",
+  "Beige": "#F5F5DC",
+  "Beige Chine": "#E1C699",
+  "Beige Fonce": "#D2B48C",
+  "Beige/Rouge": "#F5F5DC",
+  "Blanc": "#FFFFFF",
+  "Blanc 2": "#F8F8FF",
+  "Blanc Absolu": "#FFFFFF",
+  "Blanc Cassé": "#F5F5F5",
+  "Blanc Chiné": "#F5F5F5",
+  "Blanc Recyclé": "#F5F5F5",
+  "Blanc Transparent": "#FFFFFF",
+  "Blanc/Bleu": "#E6F1F7",
+  "Blanc/Bleu Foncé": "#D6E0E7",
+  "Blanc/Gris": "#E5E5E5",
+  "Blanc/Jaune Néon": "#FFFFCC",
+  "Blanc/Marine": "#E6E6FA",
+  "Blanc/Noir": "#F2F2F2",
+  "Blanc/Rouge": "#FFE6E6",
+  "Blanc/Turquoise": "#E0FFFF",
+  "Bleu": "#0000FF",
+  "Bleu Abysse": "#00008B",
+  "Bleu Arctique": "#B0E0E6",
+  "Bleu Ardoise": "#6A5ACD",
+  "Bleu Atoll": "#00B7EB",
+  "Bleu Bébé": "#89CFF0",
+  "Bleu Canard": "#007791",
+  "Bleu Caraibes": "#1E90FF",
+  "Bleu Ciel Chine": "#87CEEB",
+  "Bleu Clair Transparent": "#ADD8E6",
+  "Bleu Cremeux": "#B0C4DE",
+  "Bleu Glacier": "#E1F5FE",
+  "Bleu Marine": "#000080",
+  "Bleu Petrole": "#005F6A",
+  "Bleu Royal": "#4169E1",
+  "Bleu Transparent": "#E6F1F7",
+  "Bleu/Blanc": "#E6F1F7",
+  "Bois": "#966F33",
+  "Bordeaux": "#800020",
+  "Champagne": "#F7E7CE",
+  "Chili": "#E03C31",
+  "Chocolat": "#7B3F00",
+  "Chocolat Fonce": "#5A3A22",
+  "Ciel": "#87CEEB",
+  "Ciel Piqué": "#B0E2FF",
+  "Citron": "#FFF44F",
+  "Corail Fluo": "#FF7F50",
+  "Corde": "#BA7C45",
+  "Couleurs Assorties": "#FFD700",
+  "Creme": "#FFFDD0",
+  "Cuivré": "#B87333",
+  "Denim": "#1560BD",
+  "Denim Chine": "#1E4D6B",
+  "Ecru": "#F5F3E5",
+  "Emeraude": "#50C878",
+  "Folk Pink Twin": "#FFB6C1",
+  "Folk Red Twin": "#FF0000",
+  "French Marine": "#3B5998",
+  "French Marine 2": "#3B5998",
+  "French Marine/Blanc": "#3B5998",
+  "Fuchsia": "#FF00FF",
+  "Fuchsia Transparent": "#FF00FF",
+  "Fuschia Fluo": "#FF00FF",
+  "Gris": "#808080",
+  "Gris 2": "#A9A9A9",
+  "Gris Anthracite": "#383E42",
+  "Gris Carbone": "#625D5D",
+  "Gris Chiné": "#A9A9A9",
+  "Gris Chiné II": "#A9A9A9",
+  "Gris Chiné Recyclé": "#A9A9A9",
+  "Gris Clair": "#D3D3D3",
+  "Gris Fonce": "#696969",
+  "Gris Foncé/Gris": "#696969",
+  "Gris Metal": "#A8A8A8",
+  "Gris Pierre": "#8B8B8B",
+  "Gris Pur": "#808080",
+  "Gris Souris": "#9E9E9E",
+  "Gris Transparent": "#D3D3D3",
+  "Hibiscus": "#B43757",
+  "Ivoire": "#FFFFF0",
+  "Jaune": "#FFFF00",
+  "Jaune Clair": "#FFFFE0",
+  "Jaune Fluo": "#FFFF00",
+  "Jaune Pâle": "#FFFF99",
+  "Jaune Transparent": "#FFFFE0",
+  "Kaki": "#C3B091",
+  "Kaki Chiné": "#C3B091",
+  "Kaki Foncé": "#8B864E",
+  "Lilas": "#C8A2C8",
+  "Lime": "#00FF00",
+  "Lime Fluo": "#32CD32",
+  "Linen Twin": "#FAF0E6",
+  "Marine": "#000080",
+  "Marine Recyclé": "#000080",
+  "Marron": "#800000",
+  "Multicolore": "#FFD700",
+  "Naturel": "#F5DEB3",
+  "Noir": "#000000",
+  "Noir 2": "#0A0A0A",
+  "Noir Profond": "#000000",
+  "Noir Recyclé": "#000000",
+  "Noir/Blanc": "#000000",
+  "Noir/Bleu": "#000000",
+  "Noir/Lime": "#000000",
+  "Noir/Rouge": "#000000",
+  "Or": "#FFD700",
+  "Or Mat": "#D4AF37",
+  "Orange": "#FFA500",
+  "Orange 2": "#FF8C00",
+  "Orange Brulee": "#CC5500",
+  "Orange Fluo": "#FFA500",
+  "Orange Transparent": "#FFA500",
+  "Outremer": "#120A8F",
+  "Oxblood Chine": "#800020",
+  "Peche": "#FFDAB9",
+  "Petrole": "#005F6A",
+  "Pool Blue": "#7CB9E8",
+  "Pop Orange": "#FF9F00",
+  "Ribbon Pink": "#FFC0CB",
+  "Rose": "#FF007F",
+  "Rose Bonbon": "#F9429E",
+  "Rose Bébé": "#F4C2C2",
+  "Rose Chine": "#E75480",
+  "Rose Cremeux": "#FFE4E1",
+  "Rose Fluo 2": "#FF007F",
+  "Rose Moyen": "#C21E56",
+  "Rose Orchidée": "#DA70D6",
+  "Rose Pâle": "#FFD1DC",
+  "Rose Transparent": "#FFE4E1",
+  "Rouge": "#FF0000",
+  "Rouge 2": "#DC143C",
+  "Rouge Piment": "#FF0000",
+  "Rouge Recyclé": "#FF0000",
+  "Rouge Tango": "#FF4D00",
+  "Rouge Transparent": "#FF0000",
+  "Rouge Vif": "#FF0000",
+  "Royal": "#4169E1",
+  "Royal 3": "#4169E1",
+  "Royal Recyclé": "#4169E1",
+  "Sable": "#F4A460",
+  "Taupe": "#483C32",
+  "Terracotta": "#E2725B",
+  "Terre": "#E2725B",
+  "Tilleul": "#BAB86C",
+  "Titanium": "#878681",
+  "Transparent": "#FFFFFF",
+  "Turquoise": "#40E0D0",
+  "Vert": "#008000",
+  "Vert 2": "#00FF00",
+  "Vert Armée Vert": "#4B5320",
+  "Vert Bouteille": "#006A4E",
+  "Vert Clair Chine": "#90EE90",
+  "Vert Cremeux": "#8FBC8F",
+  "Vert Empire": "#245336",
+  "Vert Fluo": "#00FF00",
+  "Vert Foncé": "#023020",
+  "Vert Foncé 2": "#013220",
+  "Vert Foret": "#228B22",
+  "Vert Glace": "#C1E1C1",
+  "Vert Golf": "#008000",
+  "Vert Lime Transparent": "#00FF00",
+  "Vert Menthe": "#3EB489",
+  "Vert Pomme": "#8DB600",
+  "Vert Prairie": "#7CFC00",
+  "Vert Prairie /Blanc": "#7CFC00",
+  "Vert Printemps": "#00FF7F",
+  "Vert Sapin": "#0A5C36",
+  "Vert Transparent": "#90EE90",
+  "Vieux Rose": "#C08081",
+  "Violet": "#8A2BE2",
+  "Violet Clair": "#EE82EE",
+  "Violet Fonce": "#9400D3",
+  "Violet Transparent": "#EE82EE",
+  "Zinc": "#7D7D7D"
+  };
+  
+  const trimmedColor = colorName.toString().trim();
+  return colors[trimmedColor] || "#CCCCCC";
+};
+
+
+
+// Composant d'évaluation par étoiles
 const StarRating = ({ rating }) => {
   const stars = Array(5).fill(0);
   
@@ -44,20 +250,152 @@ const StarRating = ({ rating }) => {
     </div>
   );
 };
-
-// Composant ProductCard séparé pour une meilleure gestion
 const ProductCard = ({ product, onAddToCart }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  // Fonction pour parser les données JSON
+  const parseJsonField = (field) => {
+    try {
+      return field ? JSON.parse(field) : [];
+    } catch (e) {
+      console.error("Error parsing JSON field:", e);
+      return [];
+    }
+  };
+
+  // Organiser les images
+  const { allImages, imagesByColor } = useMemo(() => {
+    const allImages = [];
+    const imagesByColor = {};
+
+    // Ajouter l'image principale
+    if (product.image) {
+      allImages.push({
+        url: product.image,
+        color: null
+      });
+    }
+
+    // Ajouter les images supplémentaires
+    const additionalImages = parseJsonField(product.images_json);
+    additionalImages.forEach(img => {
+      if (img?.url) {
+        allImages.push({
+          url: img.url,
+          color: img.color || null
+        });
+      }
+    });
+
+    // Organiser les images par couleur
+    const colorImagesData = parseJsonField(product.images_by_color_json);
+    
+    // Si images_by_color_json est un tableau
+    if (Array.isArray(colorImagesData)) {
+      colorImagesData.forEach(item => {
+        if (item.color && item.images) {
+          imagesByColor[item.color] = item.images.map(url => ({
+            url,
+            color: item.color
+          }));
+        }
+      });
+    } 
+    // Si images_by_color_json est un objet
+    else if (typeof colorImagesData === 'object') {
+      Object.entries(colorImagesData).forEach(([color, urls]) => {
+        if (color && urls) {
+          imagesByColor[color] = urls.map(url => ({
+            url,
+            color
+          }));
+        }
+      });
+    }
+
+    // Ajouter toutes les images à la catégorie 'all'
+    imagesByColor['all'] = [...allImages];
+
+    return { allImages, imagesByColor };
+  }, [product.image, product.images_json, product.images_by_color_json]);
+
+  // Couleurs disponibles
+  const availableColors = useMemo(() => {
+    const colors = new Set();
+
+    // Couleurs depuis images_by_color_json
+    Object.keys(imagesByColor).forEach(color => {
+      if (color && color !== 'all') {
+        colors.add(color);
+      }
+    });
+
+    // Couleurs depuis colors_json
+    const productColors = parseJsonField(product.colors_json);
+    productColors.forEach(color => {
+      if (color && color !== "Non spécifié") {
+        colors.add(color);
+      }
+    });
+
+    return Array.from(colors);
+  }, [product.colors_json, imagesByColor]);
+
+  // Images à afficher
+  const displayedImages = useMemo(() => {
+    const colorKey = selectedColor || 'all';
+    return (imagesByColor[colorKey] || [])
+      .filter(img => img?.url && typeof img.url === 'string')
+      .map(img => img.url);
+  }, [selectedColor, imagesByColor]);
+
+  // Reset l'index et l'état d'erreur quand les images changent
+  useEffect(() => {
+    setCurrentImageIndex(0);
+    setImageError(false);
+    setImageLoading(true);
+  }, [displayedImages]);
+
+
+  // Navigation entre images
+  const navigateImage = (direction, e) => {
+    e.stopPropagation();
+    setCurrentImageIndex(prev => {
+      if (direction === 'next') {
+        return (prev + 1) % displayedImages.length;
+      }
+      return (prev - 1 + displayedImages.length) % displayedImages.length;
+    });
+  };
+
+  // Sélection de couleur
+  const selectColor = (color, e) => {
+    e.stopPropagation();
+    setSelectedColor(prev => prev === color ? null : color);
+  };
+
+  // Gestion des erreurs d'image
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      whileHover={{ 
-        y: -10,
-        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+      transition={{ duration: 0.3 }}
+      whileHover={{
+        y: -5,
+        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)"
       }}
       className="relative bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col border border-gray-100 transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
@@ -80,42 +418,85 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div>
       )}
 
-      {/* Image avec effet de zoom */}
+      {/* Image container */}
       <div className="relative overflow-hidden h-64 w-full">
-        <LazyLoadImage
-          src={product.image}
-          alt={product.name}
-          effect="blur"
-          className="w-full h-full object-cover transition-transform duration-500"
-          style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
-          wrapperClassName="w-full h-full"
-        />
-        
-        {/* Bouton favori */}
-        <button 
-          className={`absolute top-3 right-3 p-2 rounded-full ${isLiked ? 'bg-pink-100 text-pink-500' : 'bg-white text-gray-400'} shadow-sm transition-colors duration-300 z-10`}
-          onClick={() => setIsLiked(!isLiked)}
-        >
-          <FiHeart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-        </button>
+        {displayedImages.length > 0 && !imageError ? (
+          <>
+            <LazyLoadImage
+              src={displayedImages[currentImageIndex]}
+              alt={product.name}
+              effect="blur"
+              className={`w-full h-full object-cover transition-transform duration-200 ${
+                imageLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
+              wrapperClassName="w-full h-full"
+              onError={handleImageError}
+              onLoad={handleImageLoad}
+              placeholderSrc="/placeholder-product.jpg"
+            />
+
+            {displayedImages.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => navigateImage('prev', e)}
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-white bg-opacity-70 rounded-full shadow-md z-10 hover:bg-opacity-90 transition-opacity"
+                >
+                  <FiChevronLeft className="w-5 h-5 text-gray-800" />
+                </button>
+                <button
+                  onClick={(e) => navigateImage('next', e)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-white bg-opacity-70 rounded-full shadow-md z-10 hover:bg-opacity-90 transition-opacity"
+                >
+                  <FiChevronRight className="w-5 h-5 text-gray-800" />
+                </button>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+            <FiImage className="text-gray-400 w-12 h-12" />
+          </div>
+        )}
       </div>
 
-      {/* Contenu */}
+      {/* Product details */}
       <div className="p-5 flex-grow flex flex-col">
         <div className="mb-2">
           <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
             {product.category_level1}
           </span>
         </div>
-        
+
         <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-        
+
+        {/* Color selection */}
+        {availableColors.length > 0 && (
+          <div className="mb-3">
+            <div className="text-xs text-gray-500 mb-1">Couleurs disponibles :</div>
+            <div className="flex flex-wrap gap-2">
+              {availableColors.map((color, index) => (
+                <button
+                  key={index}
+                  className={`w-6 h-6 rounded-full border border-gray-200 shadow-sm hover:scale-110 transition-transform ${
+                    selectedColor === color ? 'ring-2 ring-indigo-600' : ''
+                  }`}
+                  style={{ backgroundColor: colorNameToHex(color) }}
+                  title={color}
+                  onClick={(e) => selectColor(color, e)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Price and stock */}
         <div className="mt-auto">
           <div className="flex justify-between items-center mb-3">
             <div>
               <span className="text-indigo-600 font-bold text-xl">
-                {product.price.toFixed(2)} €
+                {product.price?.toFixed(2)} €
               </span>
               {product.originalPrice && (
                 <span className="ml-2 text-sm text-gray-400 line-through">
@@ -123,19 +504,33 @@ const ProductCard = ({ product, onAddToCart }) => {
                 </span>
               )}
             </div>
-            <span className={`text-xs font-medium ${product.stock > 10 ? 'text-green-600' : product.stock > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+            <span className={`text-xs font-medium ${
+              product.stock > 10 ? 'text-green-600'
+              : product.stock > 0 ? 'text-yellow-600'
+              : 'text-red-600'
+            }`}>
               {product.stock > 0 ? `${product.stock} en stock` : 'Rupture'}
             </span>
           </div>
-          
+
           <div className="flex justify-between items-center">
-            <StarRating rating={product.rating || 0} />
-            
+            <div className="flex items-center">
+              <FiStar className="text-yellow-400 mr-1" />
+              <span className="text-sm text-gray-500">
+                {product.rating || '0.0'}
+              </span>
+            </div>
             <motion.button
-              id={`add-to-cart-${product._id}`}
-              onClick={() => onAddToCart(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCart(product);
+              }}
               disabled={product.stock === 0}
-              className={`p-2 rounded-full ${product.stock === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'} transition-colors duration-300`}
+              className={`p-2 rounded-full ${
+                product.stock === 0
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
+              } transition-colors duration-300`}
               whileTap={product.stock > 0 ? { scale: 0.9 } : {}}
               title={product.stock === 0 ? "Produit en rupture" : "Ajouter au panier"}
             >
@@ -144,16 +539,6 @@ const ProductCard = ({ product, onAddToCart }) => {
           </div>
         </div>
       </div>
-      
-      {/* Overlay au survol */}
-      {isHovered && (
-        <motion.div 
-          className="absolute inset-0 bg-black bg-opacity-5 backdrop-blur-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        />
-      )}
     </motion.div>
   );
 };
@@ -187,16 +572,7 @@ const Catalogue = () => {
         if (!response.ok) throw new Error(`Erreur ${response.status}: ${response.statusText}`);
         
         let data = await response.json();
-        data = Array.isArray(data) ? data.filter(p => p.image) : [];
-        
-        // Ajout de données simulées pour le design
-        data = data.map(p => ({
-          ...p,
-          isNew: Math.random() > 0.7,
-          originalPrice: Math.random() > 0.5 ? p.price * 1.2 : null,
-          rating: p.rating || (Math.random() * 3 + 2).toFixed(1),
-          stock: p.stock || Math.floor(Math.random() * 50)
-        }));
+        data = Array.isArray(data) ? data.filter(p => p.image || (p.images_json && JSON.parse(p.images_json).length > 0)) : [];
         
         setProducts(data);
       } catch (err) {
@@ -255,7 +631,8 @@ const Catalogue = () => {
         p.name.toLowerCase().includes(query) || 
         p.description.toLowerCase().includes(query) ||
         p.category_level1?.toLowerCase().includes(query) ||
-        p.category_level2?.toLowerCase().includes(query)
+        p.category_level2?.toLowerCase().includes(query) ||
+        (p.color && p.color.toLowerCase().includes(query))
   )}
     
     // Filtre par catégorie
@@ -274,9 +651,9 @@ const Catalogue = () => {
       case 'price-desc':
         return result.sort((a, b) => b.price - a.price);
       case 'rating':
-        return result.sort((a, b) => b.rating - a.rating);
+        return result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       case 'newest':
-        return result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       default:
         return result;
     }
