@@ -751,7 +751,7 @@ const addToCatalog = async (product) => {
     // 5. Préparation des données pour l'API
     const formData = new FormData();
     formData.append("name", product.product_name);
-    formData.append("price", product.price || 0);
+    formData.append("price", (product.price || 0) * 2);
     formData.append("description", product.long_description || product.short_description || "");
     formData.append("category_level1", product.category_level1 || "Non spécifié");
     formData.append("category_level2", product.category_level2 || "Non spécifié");

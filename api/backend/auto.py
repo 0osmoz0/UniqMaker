@@ -1,5 +1,5 @@
 import requests
-
+import json
 API_PRODUCTS_URL = "http://localhost:5001/products/images/full"
 API_ADD_PRODUCT_URL = "http://localhost:5001/products"
 AUTH_URL = "http://localhost:5001/auth/login"
@@ -74,7 +74,9 @@ def import_product(product, token):
         "category_level2": product.get("category_level2") or "Sous-catégorie par défaut",
         "category_level3": product.get("category_level3") or "Sous-sous-catégorie par défaut",
         "description": product.get("long_description") or "Pas de description disponible",
-        "image_url": product.get("images", [{}])[0].get("url", "")
+        "colors_json": json.dumps(product.get("colors", [])),
+        "images_json": json.dumps(product.get("images", [])),
+        "images_by_color_json": json.dumps(product.get("images_by_color", {}))
     }
     headers = {"Authorization": f"Bearer {token}"}
     res = requests.post(API_ADD_PRODUCT_URL, data=form_data, headers=headers)
