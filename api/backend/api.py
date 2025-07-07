@@ -12,6 +12,9 @@ from functools import wraps
 from flask import send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from flask_mail import Mail, Message
+import pdfkit
+import uuid
 
 
 # Load env variables
@@ -29,6 +32,7 @@ API_KEY = os.getenv("API_KEY")
 JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
 app.config['SECRET_KEY'] = JWT_SECRET
 products_bp = Blueprint('products', __name__)
+
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
@@ -903,6 +907,189 @@ def create_product():
         return jsonify({'error': str(e)}), 500
 
 app.register_blueprint(products_bp)
+
+# --- Routes pour les devis ---
+
+# Configuration SMTP
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'no-reply@midocean.com')
+app.config['PDF_FOLDER'] = 'static/pdfs'
+app.config['BASE_URL'] = 'http://localhost:5001'  # À adapter en production
+
+mail = Mail(app)
+
+def generate_pdf(devis_data):
+    """Génère un PDF professionnel pour le devis"""
+    if not os.path.exists(app.config['PDF_FOLDER']):
+        os.makedirs(app.config['PDF_FOLDER'])
+    
+    pdf_filename = f"devis-{datetime.now().strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}.pdf"
+    pdf_path = os.path.join(app.config['PDF_FOLDER'], pdf_filename)
+    
+    # HTML template pour le PDF
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Devis {devis_data['devis_id']}</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }}
+            .header {{ border-bottom: 2px solid #0066cc; padding-bottom: 10px; margin-bottom: 20px; }}
+            .info-section {{ margin-bottom: 30px; }}
+            .product-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+            .product-table th, .product-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            .product-table th {{ background-color: #f2f2f2; }}
+            .total-section {{ margin-top: 30px; text-align: right; }}
+            .signature {{ margin-top: 50px; border-top: 1px dashed #999; padding-top: 20px; }}
+            .product-image {{ max-width: 200px; max-height: 200px; margin: 10px 0; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>{devis_data['companyInfo']['companyName']} - Devis personnalisé</h1>
+            <p>Offre n°{devis_data['devis_id']} réalisée à Paris le {datetime.now().strftime('%d/%m/%Y')}</p>
+            <p>Date de fin de validité : {(datetime.now() + timedelta(days=60)).strftime('%d/%m/%Y')}</p>
+            <p>Votre référence client : {devis_data.get('client_reference', 'N/A')}</p>
+        </div>
+
+        <div class="info-section">
+            <h2>{devis_data['companyInfo']['companyName']}</h2>
+            <p>{devis_data['companyInfo']['billingAddress']}</p>
+        </div>
+
+        <div class="info-section">
+            <h3>{devis_data['companyInfo']['firstName']} {devis_data['companyInfo']['lastName']}</h3>
+            <p>{devis_data['companyInfo']['email']}</p>
+            <p>{devis_data['companyInfo']['phone']}</p>
+        </div>
+
+        <h2>{devis_data['product']['quantity']} | {devis_data['product']['name'].upper()}</h2>
+
+        <table class="product-table">
+            <tr>
+                <th>Description</th>
+                <th>Quantité (Prix Unitaire HT)</th>
+                <th>Total HT</th>
+            </tr>
+            <tr>
+                <td>
+                    {devis_data['product']['name']}<br>
+                    {devis_data['product']['description']}
+                </td>
+                <td>{devis_data['product']['quantity']} pièces ({devis_data['product']['price']} € P.U.)</td>
+                <td>{devis_data['total']} €</td>
+            </tr>
+        </table>
+
+        {f'<img src="{devis_data["product"]["image"]}" class="product-image" alt="Image produit">' if devis_data['product'].get('image') else ''}
+
+        <div class="info-section">
+            <h3>CARACTÉRISTIQUES PRODUIT</h3>
+            <p>Couleur : {devis_data['product'].get('color', 'Non spécifié')}</p>
+            <p><strong>PERSONNALISATION</strong></p>
+            <p>Marquage sérigraphie 1 couleur</p>
+            <p>Position de marquage : centré</p>
+            <p>Frais techniques inclus</p>
+        </div>
+
+        <div class="total-section">
+            <h3>Sous-total hors taxe</h3>
+            <p>TVA 20.0% : {float(devis_data['total']) * 0.2} €</p>
+            <h2>Total TTC : {float(devis_data['total']) * 1.2} €</h2>
+        </div>
+
+        <div class="signature">
+            <p>Avant de signer ce devis, vous devez recevoir un e-mail pour confirmer votre identité.</p>
+            <p>{devis_data['companyInfo']['firstName']} {devis_data['companyInfo']['lastName']} ({devis_data['companyInfo']['email']})</p>
+            <p>Vérifier pour signer</p>
+        </div>
+
+        <div class="info-section">
+            <h3>Conditions d'achat</h3>
+            <p>Règlement : 100% à la commande (Paiement comptant)</p>
+            <p>Paiement par chèque ou virement</p>
+        </div>
+
+        <div class="info-section">
+            <h3>Besoin d'informations complémentaires ?</h3>
+            <p>Notre équipe vous répond directement :</p>
+            <p>+33 2 40 48 83 22</p>
+            <p>contact@midocean.com</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Génération du PDF
+    pdfkit.from_string(html_content, pdf_path)
+    
+    return f"{app.config['BASE_URL']}/{app.config['PDF_FOLDER']}/{pdf_filename}"
+
+@app.route('/api/devis', methods=['POST'])
+def create_devis():
+    try:
+        data = request.get_json()
+        print("Données reçues:", data)
+
+        # Validation des données
+        required_fields = ['product', 'companyInfo']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Champ manquant: {field}"}), 400
+
+        # Calcul du total si non fourni
+        if 'total' not in data:
+            data['total'] = float(data['product']['price']) * int(data['product']['quantity'])
+
+        # Génération du PDF
+        data['devis_id'] = f"DEV-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        pdf_url = generate_pdf(data)
+
+        # Envoi de l'email
+        msg = Message(
+            subject=f"Devis {data['devis_id']} - {data['product']['name']}",
+            recipients=[data['companyInfo']['email']],
+            html=f"""
+            <h2>Votre devis MIDOCEAN</h2>
+            <p><strong>Référence:</strong> {data['devis_id']}</p>
+            <p><strong>Client:</strong> {data['companyInfo']['companyName']}</p>
+            <p><strong>Contact:</strong> {data['companyInfo']['firstName']} {data['companyInfo']['lastName']}</p>
+            <hr>
+            <h3>Détails du produit</h3>
+            <p><strong>Produit:</strong> {data['product']['name']}</p>
+            <p><strong>Référence:</strong> {data['product'].get('reference', 'N/A')}</p>
+            <p><strong>Quantité:</strong> {data['product']['quantity']}</p>
+            <p><strong>Prix unitaire:</strong> {data['product']['price']} €</p>
+            <p><strong>Total HT:</strong> {data['total']} €</p>
+            <p><strong>Total TTC:</strong> {float(data['total']) * 1.2} €</p>
+            <hr>
+            <p>Téléchargez votre devis complet au format PDF : <a href="{pdf_url}">Télécharger le devis</a></p>
+            <p>Vous pouvez aussi <a href="{pdf_url}">imprimer cette offre</a></p>
+            <hr>
+            <p>Besoin d'informations complémentaires ? Contactez-nous au +33 2 40 48 83 22</p>
+            """
+        )
+        mail.send(msg)
+
+        return jsonify({
+            "success": True,
+            "devis_id": data['devis_id'],
+            "pdf_url": pdf_url,
+            "message": "Devis créé et email envoyé avec succès"
+        })
+
+    except Exception as e:
+        print("Erreur complète:", str(e))
+        return jsonify({
+            "error": "Erreur lors de la création du devis",
+            "details": str(e)
+        }), 500
+
 
 
 if __name__ == "__main__":

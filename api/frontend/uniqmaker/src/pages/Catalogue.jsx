@@ -10,7 +10,8 @@ import {
   FiStar,
   FiChevronLeft,
   FiChevronRight,
-  FiImage
+  FiImage,
+  FiDownload
 } from "react-icons/fi";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import ReactLoading from 'react-loading';
@@ -23,197 +24,194 @@ const colorNameToHex = (colorName) => {
   if (!colorName) return "#CCCCCC";
 
   const colors = {
-      "Abricot": "#FBCEB1",
-  "Anthracite": "#383E42",
-  "Anthracite Chine": "#464646",
-  "Aqua": "#00FFFF",
-  "Argent": "#C0C0C0",
-  "Argent Brillant": "#E6E8FA",
-  "Argent Mat": "#B6B6B6",
-  "Army": "#4B5320",
-  "Astral Purple": "#5D4D7A",
-  "Beige": "#F5F5DC",
-  "Beige Chine": "#E1C699",
-  "Beige Fonce": "#D2B48C",
-  "Beige/Rouge": "#F5F5DC",
-  "Blanc": "#FFFFFF",
-  "Blanc 2": "#F8F8FF",
-  "Blanc Absolu": "#FFFFFF",
-  "Blanc Cassé": "#F5F5F5",
-  "Blanc Chiné": "#F5F5F5",
-  "Blanc Recyclé": "#F5F5F5",
-  "Blanc Transparent": "#FFFFFF",
-  "Blanc/Bleu": "#E6F1F7",
-  "Blanc/Bleu Foncé": "#D6E0E7",
-  "Blanc/Gris": "#E5E5E5",
-  "Blanc/Jaune Néon": "#FFFFCC",
-  "Blanc/Marine": "#E6E6FA",
-  "Blanc/Noir": "#F2F2F2",
-  "Blanc/Rouge": "#FFE6E6",
-  "Blanc/Turquoise": "#E0FFFF",
-  "Bleu": "#0000FF",
-  "Bleu Abysse": "#00008B",
-  "Bleu Arctique": "#B0E0E6",
-  "Bleu Ardoise": "#6A5ACD",
-  "Bleu Atoll": "#00B7EB",
-  "Bleu Bébé": "#89CFF0",
-  "Bleu Canard": "#007791",
-  "Bleu Caraibes": "#1E90FF",
-  "Bleu Ciel Chine": "#87CEEB",
-  "Bleu Clair Transparent": "#ADD8E6",
-  "Bleu Cremeux": "#B0C4DE",
-  "Bleu Glacier": "#E1F5FE",
-  "Bleu Marine": "#000080",
-  "Bleu Petrole": "#005F6A",
-  "Bleu Royal": "#4169E1",
-  "Bleu Transparent": "#E6F1F7",
-  "Bleu/Blanc": "#E6F1F7",
-  "Bois": "#966F33",
-  "Bordeaux": "#800020",
-  "Champagne": "#F7E7CE",
-  "Chili": "#E03C31",
-  "Chocolat": "#7B3F00",
-  "Chocolat Fonce": "#5A3A22",
-  "Ciel": "#87CEEB",
-  "Ciel Piqué": "#B0E2FF",
-  "Citron": "#FFF44F",
-  "Corail Fluo": "#FF7F50",
-  "Corde": "#BA7C45",
-  "Couleurs Assorties": "#FFD700",
-  "Creme": "#FFFDD0",
-  "Cuivré": "#B87333",
-  "Denim": "#1560BD",
-  "Denim Chine": "#1E4D6B",
-  "Ecru": "#F5F3E5",
-  "Emeraude": "#50C878",
-  "Folk Pink Twin": "#FFB6C1",
-  "Folk Red Twin": "#FF0000",
-  "French Marine": "#3B5998",
-  "French Marine 2": "#3B5998",
-  "French Marine/Blanc": "#3B5998",
-  "Fuchsia": "#FF00FF",
-  "Fuchsia Transparent": "#FF00FF",
-  "Fuschia Fluo": "#FF00FF",
-  "Gris": "#808080",
-  "Gris 2": "#A9A9A9",
-  "Gris Anthracite": "#383E42",
-  "Gris Carbone": "#625D5D",
-  "Gris Chiné": "#A9A9A9",
-  "Gris Chiné II": "#A9A9A9",
-  "Gris Chiné Recyclé": "#A9A9A9",
-  "Gris Clair": "#D3D3D3",
-  "Gris Fonce": "#696969",
-  "Gris Foncé/Gris": "#696969",
-  "Gris Metal": "#A8A8A8",
-  "Gris Pierre": "#8B8B8B",
-  "Gris Pur": "#808080",
-  "Gris Souris": "#9E9E9E",
-  "Gris Transparent": "#D3D3D3",
-  "Hibiscus": "#B43757",
-  "Ivoire": "#FFFFF0",
-  "Jaune": "#FFFF00",
-  "Jaune Clair": "#FFFFE0",
-  "Jaune Fluo": "#FFFF00",
-  "Jaune Pâle": "#FFFF99",
-  "Jaune Transparent": "#FFFFE0",
-  "Kaki": "#C3B091",
-  "Kaki Chiné": "#C3B091",
-  "Kaki Foncé": "#8B864E",
-  "Lilas": "#C8A2C8",
-  "Lime": "#00FF00",
-  "Lime Fluo": "#32CD32",
-  "Linen Twin": "#FAF0E6",
-  "Marine": "#000080",
-  "Marine Recyclé": "#000080",
-  "Marron": "#800000",
-  "Multicolore": "#FFD700",
-  "Naturel": "#F5DEB3",
-  "Noir": "#000000",
-  "Noir 2": "#0A0A0A",
-  "Noir Profond": "#000000",
-  "Noir Recyclé": "#000000",
-  "Noir/Blanc": "#000000",
-  "Noir/Bleu": "#000000",
-  "Noir/Lime": "#000000",
-  "Noir/Rouge": "#000000",
-  "Or": "#FFD700",
-  "Or Mat": "#D4AF37",
-  "Orange": "#FFA500",
-  "Orange 2": "#FF8C00",
-  "Orange Brulee": "#CC5500",
-  "Orange Fluo": "#FFA500",
-  "Orange Transparent": "#FFA500",
-  "Outremer": "#120A8F",
-  "Oxblood Chine": "#800020",
-  "Peche": "#FFDAB9",
-  "Petrole": "#005F6A",
-  "Pool Blue": "#7CB9E8",
-  "Pop Orange": "#FF9F00",
-  "Ribbon Pink": "#FFC0CB",
-  "Rose": "#FF007F",
-  "Rose Bonbon": "#F9429E",
-  "Rose Bébé": "#F4C2C2",
-  "Rose Chine": "#E75480",
-  "Rose Cremeux": "#FFE4E1",
-  "Rose Fluo 2": "#FF007F",
-  "Rose Moyen": "#C21E56",
-  "Rose Orchidée": "#DA70D6",
-  "Rose Pâle": "#FFD1DC",
-  "Rose Transparent": "#FFE4E1",
-  "Rouge": "#FF0000",
-  "Rouge 2": "#DC143C",
-  "Rouge Piment": "#FF0000",
-  "Rouge Recyclé": "#FF0000",
-  "Rouge Tango": "#FF4D00",
-  "Rouge Transparent": "#FF0000",
-  "Rouge Vif": "#FF0000",
-  "Royal": "#4169E1",
-  "Royal 3": "#4169E1",
-  "Royal Recyclé": "#4169E1",
-  "Sable": "#F4A460",
-  "Taupe": "#483C32",
-  "Terracotta": "#E2725B",
-  "Terre": "#E2725B",
-  "Tilleul": "#BAB86C",
-  "Titanium": "#878681",
-  "Transparent": "#FFFFFF",
-  "Turquoise": "#40E0D0",
-  "Vert": "#008000",
-  "Vert 2": "#00FF00",
-  "Vert Armée Vert": "#4B5320",
-  "Vert Bouteille": "#006A4E",
-  "Vert Clair Chine": "#90EE90",
-  "Vert Cremeux": "#8FBC8F",
-  "Vert Empire": "#245336",
-  "Vert Fluo": "#00FF00",
-  "Vert Foncé": "#023020",
-  "Vert Foncé 2": "#013220",
-  "Vert Foret": "#228B22",
-  "Vert Glace": "#C1E1C1",
-  "Vert Golf": "#008000",
-  "Vert Lime Transparent": "#00FF00",
-  "Vert Menthe": "#3EB489",
-  "Vert Pomme": "#8DB600",
-  "Vert Prairie": "#7CFC00",
-  "Vert Prairie /Blanc": "#7CFC00",
-  "Vert Printemps": "#00FF7F",
-  "Vert Sapin": "#0A5C36",
-  "Vert Transparent": "#90EE90",
-  "Vieux Rose": "#C08081",
-  "Violet": "#8A2BE2",
-  "Violet Clair": "#EE82EE",
-  "Violet Fonce": "#9400D3",
-  "Violet Transparent": "#EE82EE",
-  "Zinc": "#7D7D7D"
+    "Abricot": "#FBCEB1",
+    "Anthracite": "#383E42",
+    "Anthracite Chine": "#464646",
+    "Aqua": "#00FFFF",
+    "Argent": "#C0C0C0",
+    "Argent Brillant": "#E6E8FA",
+    "Argent Mat": "#B6B6B6",
+    "Army": "#4B5320",
+    "Astral Purple": "#5D4D7A",
+    "Beige": "#F5F5DC",
+    "Beige Chine": "#E1C699",
+    "Beige Fonce": "#D2B48C",
+    "Beige/Rouge": "#F5F5DC",
+    "Blanc": "#FFFFFF",
+    "Blanc 2": "#F8F8FF",
+    "Blanc Absolu": "#FFFFFF",
+    "Blanc Cassé": "#F5F5F5",
+    "Blanc Chiné": "#F5F5F5",
+    "Blanc Recyclé": "#F5F5F5",
+    "Blanc Transparent": "#FFFFFF",
+    "Blanc/Bleu": "#E6F1F7",
+    "Blanc/Bleu Foncé": "#D6E0E7",
+    "Blanc/Gris": "#E5E5E5",
+    "Blanc/Jaune Néon": "#FFFFCC",
+    "Blanc/Marine": "#E6E6FA",
+    "Blanc/Noir": "#F2F2F2",
+    "Blanc/Rouge": "#FFE6E6",
+    "Blanc/Turquoise": "#E0FFFF",
+    "Bleu": "#0000FF",
+    "Bleu Abysse": "#00008B",
+    "Bleu Arctique": "#B0E0E6",
+    "Bleu Ardoise": "#6A5ACD",
+    "Bleu Atoll": "#00B7EB",
+    "Bleu Bébé": "#89CFF0",
+    "Bleu Canard": "#007791",
+    "Bleu Caraibes": "#1E90FF",
+    "Bleu Ciel Chine": "#87CEEB",
+    "Bleu Clair Transparent": "#ADD8E6",
+    "Bleu Cremeux": "#B0C4DE",
+    "Bleu Glacier": "#E1F5FE",
+    "Bleu Marine": "#000080",
+    "Bleu Petrole": "#005F6A",
+    "Bleu Royal": "#4169E1",
+    "Bleu Transparent": "#E6F1F7",
+    "Bleu/Blanc": "#E6F1F7",
+    "Bois": "#966F33",
+    "Bordeaux": "#800020",
+    "Champagne": "#F7E7CE",
+    "Chili": "#E03C31",
+    "Chocolat": "#7B3F00",
+    "Chocolat Fonce": "#5A3A22",
+    "Ciel": "#87CEEB",
+    "Ciel Piqué": "#B0E2FF",
+    "Citron": "#FFF44F",
+    "Corail Fluo": "#FF7F50",
+    "Corde": "#BA7C45",
+    "Couleurs Assorties": "#FFD700",
+    "Creme": "#FFFDD0",
+    "Cuivré": "#B87333",
+    "Denim": "#1560BD",
+    "Denim Chine": "#1E4D6B",
+    "Ecru": "#F5F3E5",
+    "Emeraude": "#50C878",
+    "Folk Pink Twin": "#FFB6C1",
+    "Folk Red Twin": "#FF0000",
+    "French Marine": "#3B5998",
+    "French Marine 2": "#3B5998",
+    "French Marine/Blanc": "#3B5998",
+    "Fuchsia": "#FF00FF",
+    "Fuchsia Transparent": "#FF00FF",
+    "Fuschia Fluo": "#FF00FF",
+    "Gris": "#808080",
+    "Gris 2": "#A9A9A9",
+    "Gris Anthracite": "#383E42",
+    "Gris Carbone": "#625D5D",
+    "Gris Chiné": "#A9A9A9",
+    "Gris Chiné II": "#A9A9A9",
+    "Gris Chiné Recyclé": "#A9A9A9",
+    "Gris Clair": "#D3D3D3",
+    "Gris Fonce": "#696969",
+    "Gris Foncé/Gris": "#696969",
+    "Gris Metal": "#A8A8A8",
+    "Gris Pierre": "#8B8B8B",
+    "Gris Pur": "#808080",
+    "Gris Souris": "#9E9E9E",
+    "Gris Transparent": "#D3D3D3",
+    "Hibiscus": "#B43757",
+    "Ivoire": "#FFFFF0",
+    "Jaune": "#FFFF00",
+    "Jaune Clair": "#FFFFE0",
+    "Jaune Fluo": "#FFFF00",
+    "Jaune Pâle": "#FFFF99",
+    "Jaune Transparent": "#FFFFE0",
+    "Kaki": "#C3B091",
+    "Kaki Chiné": "#C3B091",
+    "Kaki Foncé": "#8B864E",
+    "Lilas": "#C8A2C8",
+    "Lime": "#00FF00",
+    "Lime Fluo": "#32CD32",
+    "Linen Twin": "#FAF0E6",
+    "Marine": "#000080",
+    "Marine Recyclé": "#000080",
+    "Marron": "#800000",
+    "Multicolore": "#FFD700",
+    "Naturel": "#F5DEB3",
+    "Noir": "#000000",
+    "Noir 2": "#0A0A0A",
+    "Noir Profond": "#000000",
+    "Noir Recyclé": "#000000",
+    "Noir/Blanc": "#000000",
+    "Noir/Bleu": "#000000",
+    "Noir/Lime": "#000000",
+    "Noir/Rouge": "#000000",
+    "Or": "#FFD700",
+    "Or Mat": "#D4AF37",
+    "Orange": "#FFA500",
+    "Orange 2": "#FF8C00",
+    "Orange Brulee": "#CC5500",
+    "Orange Fluo": "#FFA500",
+    "Orange Transparent": "#FFA500",
+    "Outremer": "#120A8F",
+    "Oxblood Chine": "#800020",
+    "Peche": "#FFDAB9",
+    "Petrole": "#005F6A",
+    "Pool Blue": "#7CB9E8",
+    "Pop Orange": "#FF9F00",
+    "Ribbon Pink": "#FFC0CB",
+    "Rose": "#FF007F",
+    "Rose Bonbon": "#F9429E",
+    "Rose Bébé": "#F4C2C2",
+    "Rose Chine": "#E75480",
+    "Rose Cremeux": "#FFE4E1",
+    "Rose Fluo 2": "#FF007F",
+    "Rose Moyen": "#C21E56",
+    "Rose Orchidée": "#DA70D6",
+    "Rose Pâle": "#FFD1DC",
+    "Rose Transparent": "#FFE4E1",
+    "Rouge": "#FF0000",
+    "Rouge 2": "#DC143C",
+    "Rouge Piment": "#FF0000",
+    "Rouge Recyclé": "#FF0000",
+    "Rouge Tango": "#FF4D00",
+    "Rouge Transparent": "#FF0000",
+    "Rouge Vif": "#FF0000",
+    "Royal": "#4169E1",
+    "Royal 3": "#4169E1",
+    "Royal Recyclé": "#4169E1",
+    "Sable": "#F4A460",
+    "Taupe": "#483C32",
+    "Terracotta": "#E2725B",
+    "Terre": "#E2725B",
+    "Tilleul": "#BAB86C",
+    "Titanium": "#878681",
+    "Transparent": "#FFFFFF",
+    "Turquoise": "#40E0D0",
+    "Vert": "#008000",
+    "Vert 2": "#00FF00",
+    "Vert Armée Vert": "#4B5320",
+    "Vert Bouteille": "#006A4E",
+    "Vert Clair Chine": "#90EE90",
+    "Vert Cremeux": "#8FBC8F",
+    "Vert Empire": "#245336",
+    "Vert Fluo": "#00FF00",
+    "Vert Foncé": "#023020",
+    "Vert Foncé 2": "#013220",
+    "Vert Foret": "#228B22",
+    "Vert Glace": "#C1E1C1",
+    "Vert Golf": "#008000",
+    "Vert Lime Transparent": "#00FF00",
+    "Vert Menthe": "#3EB489",
+    "Vert Pomme": "#8DB600",
+    "Vert Prairie": "#7CFC00",
+    "Vert Prairie /Blanc": "#7CFC00",
+    "Vert Printemps": "#00FF7F",
+    "Vert Sapin": "#0A5C36",
+    "Vert Transparent": "#90EE90",
+    "Vieux Rose": "#C08081",
+    "Violet": "#8A2BE2",
+    "Violet Clair": "#EE82EE",
+    "Violet Fonce": "#9400D3",
+    "Violet Transparent": "#EE82EE",
+    "Zinc": "#7D7D7D"
   };
   
   const trimmedColor = colorName.toString().trim();
   return colors[trimmedColor] || "#CCCCCC";
 };
 
-
-
-// Composant d'évaluation par étoiles
 const StarRating = ({ rating }) => {
   const stars = Array(5).fill(0);
   
@@ -250,14 +248,33 @@ const StarRating = ({ rating }) => {
     </div>
   );
 };
-const ProductCard = ({ product, onAddToCart }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
 
-  // Fonction pour parser les données JSON
+const DevisPopup = ({ product, onClose, onSubmit }) => {
+  const [quantity, setQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [companyInfo, setCompanyInfo] = useState({
+    siret: '',
+    companyName: '',
+    email: '',
+    phone: '',
+    firstName: '',
+    lastName: '',
+    billingAddress: '',
+    deliveryAddress: '',
+    sameAddress: true
+  });
+  const [loadingSiret, setLoadingSiret] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isSending, setIsSending] = useState(false);
+  const [sendCopy, setSendCopy] = useState(true);
+  const [sendSuccess, setSendSuccess] = useState(false);
+  const [error, setError] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
+
+  const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5001';
+  const userToken = localStorage.getItem('token');
+
   const parseJsonField = (field) => {
     try {
       return field ? JSON.parse(field) : [];
@@ -267,12 +284,10 @@ const ProductCard = ({ product, onAddToCart }) => {
     }
   };
 
-  // Organiser les images
   const { allImages, imagesByColor } = useMemo(() => {
     const allImages = [];
     const imagesByColor = {};
 
-    // Ajouter l'image principale
     if (product.image) {
       allImages.push({
         url: product.image,
@@ -280,7 +295,6 @@ const ProductCard = ({ product, onAddToCart }) => {
       });
     }
 
-    // Ajouter les images supplémentaires
     const additionalImages = parseJsonField(product.images_json);
     additionalImages.forEach(img => {
       if (img?.url) {
@@ -291,10 +305,8 @@ const ProductCard = ({ product, onAddToCart }) => {
       }
     });
 
-    // Organiser les images par couleur
     const colorImagesData = parseJsonField(product.images_by_color_json);
     
-    // Si images_by_color_json est un tableau
     if (Array.isArray(colorImagesData)) {
       colorImagesData.forEach(item => {
         if (item.color && item.images) {
@@ -304,9 +316,7 @@ const ProductCard = ({ product, onAddToCart }) => {
           }));
         }
       });
-    } 
-    // Si images_by_color_json est un objet
-    else if (typeof colorImagesData === 'object') {
+    } else if (typeof colorImagesData === 'object') {
       Object.entries(colorImagesData).forEach(([color, urls]) => {
         if (color && urls) {
           imagesByColor[color] = urls.map(url => ({
@@ -317,24 +327,19 @@ const ProductCard = ({ product, onAddToCart }) => {
       });
     }
 
-    // Ajouter toutes les images à la catégorie 'all'
     imagesByColor['all'] = [...allImages];
-
     return { allImages, imagesByColor };
-  }, [product.image, product.images_json, product.images_by_color_json]);
+  }, [product]);
 
-  // Couleurs disponibles
   const availableColors = useMemo(() => {
     const colors = new Set();
 
-    // Couleurs depuis images_by_color_json
     Object.keys(imagesByColor).forEach(color => {
       if (color && color !== 'all') {
         colors.add(color);
       }
     });
 
-    // Couleurs depuis colors_json
     const productColors = parseJsonField(product.colors_json);
     productColors.forEach(color => {
       if (color && color !== "Non spécifié") {
@@ -345,7 +350,6 @@ const ProductCard = ({ product, onAddToCart }) => {
     return Array.from(colors);
   }, [product.colors_json, imagesByColor]);
 
-  // Images à afficher
   const displayedImages = useMemo(() => {
     const colorKey = selectedColor || 'all';
     return (imagesByColor[colorKey] || [])
@@ -353,15 +357,625 @@ const ProductCard = ({ product, onAddToCart }) => {
       .map(img => img.url);
   }, [selectedColor, imagesByColor]);
 
-  // Reset l'index et l'état d'erreur quand les images changent
+  const navigateImage = (direction) => {
+    setCurrentImageIndex(prev => {
+      if (direction === 'next') {
+        return (prev + 1) % displayedImages.length;
+      }
+      return (prev - 1 + displayedImages.length) % displayedImages.length;
+    });
+  };
+
+  const fetchCompanyInfo = async (siret) => {
+    if (siret.length < 14) return;
+    
+    setLoadingSiret(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/company-info?siret=${siret}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setCompanyInfo(prev => ({
+          ...prev,
+          companyName: data.company.name || '',
+          billingAddress: data.company.address || '',
+        }));
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des infos SIRET:", error);
+    } finally {
+      setLoadingSiret(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSending(true);
+    setError(null);
+
+    const devisData = {
+      product: {
+        id: product.id || product._id,
+        name: product.name,
+        price: product.price,
+        quantity,
+        color: selectedColor,
+        image: displayedImages[currentImageIndex] || product.image,
+        description: product.description,
+        reference: product.reference || 'N/A',
+        specifications: product.specifications || {}
+      },
+      companyInfo: {
+        companyName: companyInfo.companyName,
+        firstName: companyInfo.firstName,
+        lastName: companyInfo.lastName,
+        email: companyInfo.email,
+        phone: companyInfo.phone,
+        billingAddress: companyInfo.billingAddress,
+        deliveryAddress: companyInfo.sameAddress ? companyInfo.billingAddress : companyInfo.deliveryAddress
+      },
+      client_reference: companyInfo.siret ? `CLI-${companyInfo.siret.slice(-6)}` : 'N/A',
+      sendCopy
+    };
+
+    try {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+
+      if (userToken) {
+        headers['Authorization'] = `Bearer ${userToken}`;
+      }
+
+      const response = await fetch(`${API_BASE}/api/devis`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(devisData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erreur lors de l'envoi du devis");
+      }
+
+      setSendSuccess(true);
+      setPdfUrl(result.pdf_url);
+      onSubmit(result);
+      
+      if (sendCopy && result.pdf_url) {
+        window.open(result.pdf_url, '_blank');
+      }
+
+      setTimeout(() => {
+        onClose();
+      }, 5000);
+
+    } catch (error) {
+      console.error("Erreur:", error);
+      setError(error.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 20, opacity: 0 }}
+        transition={{ type: "spring", damping: 25 }}
+        className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-2xl font-bold">Demande de devis</h3>
+              <p className="text-indigo-100">Remplissez les informations pour recevoir votre devis personnalisé</p>
+            </div>
+            <button 
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors"
+              disabled={isSending}
+            >
+              <FiX size={24} />
+            </button>
+          </div>
+          
+          {!isSending && !sendSuccess && (
+            <div className="flex mt-6 border-b border-white/20">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`px-4 py-2 font-medium ${activeTab === 'details' ? 'text-white border-b-2 border-white' : 'text-indigo-200'}`}
+              >
+                Détails du produit
+              </button>
+              <button
+                onClick={() => setActiveTab('company')}
+                className={`px-4 py-2 font-medium ${activeTab === 'company' ? 'text-white border-b-2 border-white' : 'text-indigo-200'}`}
+              >
+                Informations société
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-6">
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {isSending ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+              <p className="text-lg font-medium text-gray-600">Envoi en cours...</p>
+              <p className="text-sm text-gray-500 mt-2">Génération du devis PDF</p>
+            </div>
+          ) : sendSuccess ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Devis créé avec succès !</h3>
+              <p className="text-gray-600 mb-6">
+                Un email de confirmation a été envoyé à <span className="font-medium">{companyInfo.email}</span>.
+              </p>
+              {pdfUrl && (
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <FiDownload className="mr-2" />
+                  Télécharger le PDF
+                </a>
+              )}
+              <button
+                onClick={onClose}
+                className="mt-4 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                Fermer
+              </button>
+            </div>
+          ) : activeTab === 'details' ? (
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <div className="bg-gray-50 rounded-lg overflow-hidden relative h-64 flex items-center justify-center">
+                  {displayedImages.length > 0 ? (
+                    <>
+                      <img 
+                        src={displayedImages[currentImageIndex]} 
+                        alt={product.name}
+                        className="max-h-full w-auto object-contain"
+                      />
+                      {displayedImages.length > 1 && (
+                        <>
+                          <button
+                            onClick={() => navigateImage('prev')}
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-white bg-opacity-70 rounded-full shadow-md z-10 hover:bg-opacity-90 transition-opacity"
+                          >
+                            <FiChevronLeft className="w-5 h-5 text-gray-800" />
+                          </button>
+                          <button
+                            onClick={() => navigateImage('next')}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-white bg-opacity-70 rounded-full shadow-md z-10 hover:bg-opacity-90 transition-opacity"
+                          >
+                            <FiChevronRight className="w-5 h-5 text-gray-800" />
+                          </button>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-gray-400 flex flex-col items-center">
+                      <FiImage className="w-16 h-16" />
+                      <span className="mt-2">Image non disponible</span>
+                    </div>
+                  )}
+                </div>
+
+                {availableColors.length > 0 && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Couleur sélectionnée</label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableColors.map((color, index) => (
+                        <button
+                          key={index}
+                          className={`w-8 h-8 rounded-full border-2 ${selectedColor === color ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-gray-200'} shadow-sm hover:scale-110 transition-transform`}
+                          style={{ backgroundColor: color }}
+                          title={color}
+                          onClick={() => {
+                            setSelectedColor(color);
+                            setCurrentImageIndex(0);
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {selectedColor && (
+                      <p className="mt-2 text-sm text-gray-600">Couleur : {selectedColor}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <div className="mb-6">
+                  <h4 className="text-2xl font-bold text-gray-900 mb-1">{product.name}</h4>
+                  {product.reference && (
+                    <p className="text-sm text-gray-500">Référence : {product.reference}</p>
+                  )}
+                </div>
+
+                <div className="prose prose-sm max-w-none text-gray-600 mb-6">
+                  <h5 className="text-lg font-semibold text-gray-800 mb-2">Description</h5>
+                  <p>{product.description || "Aucune description disponible."}</p>
+                </div>
+
+                {product.specifications && (
+                  <div className="mb-6">
+                    <h5 className="text-lg font-semibold text-gray-800 mb-2">Caractéristiques</h5>
+                    <ul className="grid grid-cols-2 gap-2 text-sm">
+                      {Object.entries(product.specifications).map(([key, value]) => (
+                        <li key={key} className="flex">
+                          <span className="font-medium text-gray-700 w-1/2">{key}:</span>
+                          <span className="text-gray-600">{value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-gray-500">Prix unitaire</p>
+                      <p className="text-lg font-bold text-indigo-600">{product.price.toFixed(2)} €</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                        className="w-10 h-10 flex items-center justify-center bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <FiChevronDown />
+                      </button>
+                      <span className="w-12 text-center font-medium">{quantity}</span>
+                      <button 
+                        onClick={() => setQuantity(prev => prev + 1)}
+                        className="w-10 h-10 flex items-center justify-center bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <FiChevronUp />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-600">Sous-total</span>
+                      <span className="font-medium">{(product.price * quantity).toFixed(2)} €</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span className="text-gray-900">Total TTC</span>
+                      <span className="text-indigo-600">{(product.price * quantity * 1.2).toFixed(2)} €</span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setActiveTab('company')}
+                    className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    Continuer vers les informations
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 className="text-xl font-bold text-gray-900 mb-6">Informations de facturation</h4>
+                
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">SIRET (facultatif)</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={companyInfo.siret}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 14);
+                          setCompanyInfo({...companyInfo, siret: value});
+                          if (value.length === 14) fetchCompanyInfo(value);
+                        }}
+                        placeholder="123 456 789 00000"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                      {loadingSiret && (
+                        <div className="absolute right-3 top-3">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom de l'entreprise*</label>
+                    <input
+                      type="text"
+                      value={companyInfo.companyName}
+                      onChange={(e) => setCompanyInfo({...companyInfo, companyName: e.target.value})}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Prénom*</label>
+                      <input
+                        type="text"
+                        value={companyInfo.firstName}
+                        onChange={(e) => setCompanyInfo({...companyInfo, firstName: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Nom*</label>
+                      <input
+                        type="text"
+                        value={companyInfo.lastName}
+                        onChange={(e) => setCompanyInfo({...companyInfo, lastName: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email*</label>
+                    <input
+                      type="email"
+                      value={companyInfo.email}
+                      onChange={(e) => setCompanyInfo({...companyInfo, email: e.target.value})}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Téléphone*</label>
+                    <input
+                      type="tel"
+                      value={companyInfo.phone}
+                      onChange={(e) => setCompanyInfo({...companyInfo, phone: e.target.value})}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xl font-bold text-gray-900 mb-6">Adresse de facturation</h4>
+                
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Adresse*</label>
+                    <textarea
+                      value={companyInfo.billingAddress}
+                      onChange={(e) => setCompanyInfo({...companyInfo, billingAddress: e.target.value})}
+                      required
+                      rows={4}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="sameAddress"
+                      checked={companyInfo.sameAddress}
+                      onChange={(e) => setCompanyInfo({...companyInfo, sameAddress: e.target.checked})}
+                      className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="sameAddress" className="ml-3 block text-sm text-gray-700">
+                      Utiliser la même adresse pour la livraison
+                    </label>
+                  </div>
+
+                  {!companyInfo.sameAddress && (
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-900 mb-4">Adresse de livraison</h4>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Adresse de livraison</label>
+                      <textarea
+                        value={companyInfo.deliveryAddress}
+                        onChange={(e) => setCompanyInfo({...companyInfo, deliveryAddress: e.target.value})}
+                        rows={4}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="font-medium text-gray-900 mb-2">Votre sélection</h5>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                        {displayedImages.length > 0 ? (
+                          <img 
+                            src={displayedImages[currentImageIndex]} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <FiImage className="w-full h-full text-gray-400 p-2" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{product.name}</p>
+                        {selectedColor && (
+                          <p className="text-sm text-gray-600">Couleur: {selectedColor}</p>
+                        )}
+                        <p className="text-sm text-gray-600">Quantité: {quantity}</p>
+                        <p className="text-sm font-bold">Total TTC: {(product.price * quantity * 1.2).toFixed(2)} €</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="sendCopy"
+                      checked={sendCopy}
+                      onChange={(e) => setSendCopy(e.target.checked)}
+                      className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="sendCopy" className="ml-3 block text-sm text-gray-700">
+                      Recevoir une copie du devis par email
+                    </label>
+                  </div>
+
+                  <div className="pt-4">
+                    <div className="flex space-x-4">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('details')}
+                        className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Retour
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSending}
+                        className="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                      >
+                        {isSending ? 'Envoi en cours...' : 'Envoyer la demande'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {!isSending && !sendSuccess && (
+          <div className="bg-gray-50 p-4 border-t border-gray-200 text-center text-sm text-gray-500">
+            Votre demande sera traitée dans les plus brefs délais. Un email de confirmation vous sera envoyé.
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+};
+
+
+const ProductCard = ({ product, onCreateDevis }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const parseJsonField = (field) => {
+    try {
+      return field ? JSON.parse(field) : [];
+    } catch (e) {
+      console.error("Error parsing JSON field:", e);
+      return [];
+    }
+  };
+
+  const { allImages, imagesByColor } = useMemo(() => {
+    const allImages = [];
+    const imagesByColor = {};
+
+    if (product.image) {
+      allImages.push({
+        url: product.image,
+        color: null
+      });
+    }
+
+    const additionalImages = parseJsonField(product.images_json);
+    additionalImages.forEach(img => {
+      if (img?.url) {
+        allImages.push({
+          url: img.url,
+          color: img.color || null
+        });
+      }
+    });
+
+    const colorImagesData = parseJsonField(product.images_by_color_json);
+    
+    if (Array.isArray(colorImagesData)) {
+      colorImagesData.forEach(item => {
+        if (item.color && item.images) {
+          imagesByColor[item.color] = item.images.map(url => ({
+            url,
+            color: item.color
+          }));
+        }
+      });
+    } else if (typeof colorImagesData === 'object') {
+      Object.entries(colorImagesData).forEach(([color, urls]) => {
+        if (color && urls) {
+          imagesByColor[color] = urls.map(url => ({
+            url,
+            color
+          }));
+        }
+      });
+    }
+
+    imagesByColor['all'] = [...allImages];
+
+    return { allImages, imagesByColor };
+  }, [product.image, product.images_json, product.images_by_color_json]);
+
+  const availableColors = useMemo(() => {
+    const colors = new Set();
+
+    Object.keys(imagesByColor).forEach(color => {
+      if (color && color !== 'all') {
+        colors.add(color);
+      }
+    });
+
+    const productColors = parseJsonField(product.colors_json);
+    productColors.forEach(color => {
+      if (color && color !== "Non spécifié") {
+        colors.add(color);
+      }
+    });
+
+    return Array.from(colors);
+  }, [product.colors_json, imagesByColor]);
+
+  const displayedImages = useMemo(() => {
+    const colorKey = selectedColor || 'all';
+    return (imagesByColor[colorKey] || [])
+      .filter(img => img?.url && typeof img.url === 'string')
+      .map(img => img.url);
+  }, [selectedColor, imagesByColor]);
+
   useEffect(() => {
     setCurrentImageIndex(0);
     setImageError(false);
     setImageLoading(true);
   }, [displayedImages]);
 
-
-  // Navigation entre images
   const navigateImage = (direction, e) => {
     e.stopPropagation();
     setCurrentImageIndex(prev => {
@@ -372,13 +986,11 @@ const ProductCard = ({ product, onAddToCart }) => {
     });
   };
 
-  // Sélection de couleur
   const selectColor = (color, e) => {
     e.stopPropagation();
     setSelectedColor(prev => prev === color ? null : color);
   };
 
-  // Gestion des erreurs d'image
   const handleImageError = () => {
     setImageError(true);
     setImageLoading(false);
@@ -401,7 +1013,6 @@ const ProductCard = ({ product, onAddToCart }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Badges */}
       {product.stock <= 10 && product.stock > 0 && (
         <div className="absolute top-3 left-3 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
           Stock limité
@@ -418,7 +1029,6 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div>
       )}
 
-      {/* Image container */}
       <div className="relative overflow-hidden h-64 w-full">
         {displayedImages.length > 0 && !imageError ? (
           <>
@@ -460,7 +1070,6 @@ const ProductCard = ({ product, onAddToCart }) => {
         )}
       </div>
 
-      {/* Product details */}
       <div className="p-5 flex-grow flex flex-col">
         <div className="mb-2">
           <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
@@ -471,7 +1080,6 @@ const ProductCard = ({ product, onAddToCart }) => {
         <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
 
-        {/* Color selection */}
         {availableColors.length > 0 && (
           <div className="mb-3">
             <div className="text-xs text-gray-500 mb-1">Couleurs disponibles :</div>
@@ -491,7 +1099,6 @@ const ProductCard = ({ product, onAddToCart }) => {
           </div>
         )}
 
-        {/* Price and stock */}
         <div className="mt-auto">
           <div className="flex justify-between items-center mb-3">
             <div>
@@ -523,7 +1130,7 @@ const ProductCard = ({ product, onAddToCart }) => {
             <motion.button
               onClick={(e) => {
                 e.stopPropagation();
-                onAddToCart(product);
+                onCreateDevis(product);
               }}
               disabled={product.stock === 0}
               className={`p-2 rounded-full ${
@@ -532,7 +1139,7 @@ const ProductCard = ({ product, onAddToCart }) => {
                   : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
               } transition-colors duration-300`}
               whileTap={product.stock > 0 ? { scale: 0.9 } : {}}
-              title={product.stock === 0 ? "Produit en rupture" : "Ajouter au panier"}
+              title={product.stock === 0 ? "Produit en rupture" : "Créer un devis"}
             >
               <FiShoppingCart size={18} />
             </motion.button>
@@ -554,6 +1161,8 @@ const Catalogue = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('default');
+  const [devisProduct, setDevisProduct] = useState(null);
+  const [devisSent, setDevisSent] = useState(false);
   const productsPerPage = 12;
   
   const containerRef = useRef(null);
@@ -585,7 +1194,6 @@ const Catalogue = () => {
     fetchProducts();
   }, []);
 
-  // Construction des catégories
   const categories = useMemo(() => {
     const cats = [];
 
@@ -620,11 +1228,9 @@ const Catalogue = () => {
     return cats.sort((a, b) => b.count - a.count);
   }, [products]);
 
-  // Filtrer et trier les produits
   const filteredProducts = useMemo(() => {
     let result = [...products];
     
-    // Filtre par recherche
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(p => 
@@ -633,9 +1239,9 @@ const Catalogue = () => {
         p.category_level1?.toLowerCase().includes(query) ||
         p.category_level2?.toLowerCase().includes(query) ||
         (p.color && p.color.toLowerCase().includes(query))
-  )}
+      );
+    }
     
-    // Filtre par catégorie
     result = result.filter(p => {
       return (
         (selectedCategoryLevel1 ? p.category_level1 === selectedCategoryLevel1 : true) &&
@@ -644,7 +1250,6 @@ const Catalogue = () => {
       );
     });
     
-    // Tri
     switch (sortOption) {
       case 'price-asc':
         return result.sort((a, b) => a.price - b.price);
@@ -665,7 +1270,6 @@ const Catalogue = () => {
     page * productsPerPage
   );
 
-  // Handlers
   const handleCategoryChange = (level, value) => {
     if (level === 1) {
       setSelectedCategoryLevel1(value || null);
@@ -687,28 +1291,31 @@ const Catalogue = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAddToCart = (product) => {
-    const button = document.getElementById(`add-to-cart-${product._id}`);
-    if (button) {
-      button.classList.add('animate-ping');
-      setTimeout(() => button.classList.remove('animate-ping'), 500);
+  const handleCreateDevis = (product) => {
+    setDevisProduct(product);
+    setDevisSent(false);
+  };
+
+  const handleSubmitDevis = async (devisData) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/devis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(devisData),
+      });
+
+      if (response.ok) {
+        setDevisSent(true);
+        setTimeout(() => {
+          setDevisProduct(null);
+          setDevisSent(false);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'envoi du devis:", error);
     }
-    
-    // Notification toast simulée
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
-    toast.innerHTML = `
-      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-      </svg>
-      ${product.name} ajouté au panier
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      toast.classList.add('opacity-0', 'translate-y-4', 'transition-all', 'duration-300');
-      setTimeout(() => toast.remove(), 300);
-    }, 2000);
   };
 
   const resetFilters = () => {
@@ -758,7 +1365,6 @@ const Catalogue = () => {
 
   return (
     <div className="min-h-screen bg-gray-50" ref={containerRef}>
-      {/* Navigation fixe */}
       <motion.header 
         style={{ y }}
         className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50 border-b border-gray-100"
@@ -805,7 +1411,6 @@ const Catalogue = () => {
         </div>
       </motion.header>
 
-      {/* Hero Section avec parallax */}
       <div className="relative pt-32 pb-20 overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-900 to-purple-900 opacity-95"></div>
@@ -822,9 +1427,7 @@ const Catalogue = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
-        {/* Barre de recherche mobile */}
         <div className="md:hidden mb-6">
           <div className="relative">
             <input
@@ -841,7 +1444,6 @@ const Catalogue = () => {
           </div>
         </div>
 
-        {/* Filtres et tris */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="flex items-center gap-3">
             <button 
@@ -880,7 +1482,6 @@ const Catalogue = () => {
           </div>
         </div>
 
-        {/* Filtres détaillés */}
         <AnimatePresence>
           {showFilters && (
             <motion.div
@@ -891,7 +1492,6 @@ const Catalogue = () => {
               className="overflow-hidden"
             >
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* Catégorie niveau 1 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie principale</label>
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
@@ -916,7 +1516,6 @@ const Catalogue = () => {
                   </div>
                 </div>
 
-                {/* Catégorie niveau 2 */}
                 {selectedCategoryLevel1 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Sous-catégorie</label>
@@ -945,7 +1544,6 @@ const Catalogue = () => {
                   </div>
                 )}
 
-                {/* Catégorie niveau 3 */}
                 {selectedCategoryLevel2 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Type précis</label>
@@ -976,7 +1574,6 @@ const Catalogue = () => {
           )}
         </AnimatePresence>
 
-        {/* Résultats */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''}
@@ -1020,7 +1617,6 @@ const Catalogue = () => {
           )}
         </div>
 
-        {/* Produits */}
         {filteredProducts.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1042,12 +1638,11 @@ const Catalogue = () => {
                 <ProductCard 
                   key={product._id || product.id} 
                   product={product} 
-                  onAddToCart={handleAddToCart}
+                  onCreateDevis={handleCreateDevis}
                 />
               ))}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center mt-16">
                 <nav className="flex items-center gap-1">
@@ -1110,7 +1705,6 @@ const Catalogue = () => {
         )}
       </div>
 
-      {/* Newsletter */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-16 px-6 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Abonnez-vous à notre newsletter</h2>
@@ -1130,7 +1724,6 @@ const Catalogue = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -1189,6 +1782,28 @@ const Catalogue = () => {
           <p>&copy; {new Date().getFullYear()} LUXURYSHOP. Tous droits réservés.</p>
         </div>
       </footer>
+
+      {devisProduct && (
+        <DevisPopup 
+          product={devisProduct}
+          onClose={() => setDevisProduct(null)}
+          onSubmit={handleSubmitDevis}
+        />
+      )}
+
+      {devisSent && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center z-50"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          Votre demande de devis a bien été envoyée
+        </motion.div>
+      )}
     </div>
   );
 };
