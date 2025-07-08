@@ -810,6 +810,83 @@ def register():
     finally:
         conn.close()
 
+import json
+
+@products_bp.route('/products/<int:product_id>/similar', methods=['GET'])
+def get_similar_products(product_id):
+    try:
+        # D'abord, récupérer le produit pour connaître sa catégorie
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        
+        c.execute('SELECT category_level1 FROM products WHERE id = ?', (product_id,))
+        product = c.fetchone()
+        
+        if product is None:
+            conn.close()
+            return jsonify({'error': 'Produit non trouvé'}), 404
+        
+        category = product['category_level1']
+        
+        # Récupérer 4 produits aléatoires de la même catégorie (en excluant le produit actuel)
+        c.execute('''
+            SELECT * FROM products 
+            WHERE category_level1 = ? AND id != ?
+            ORDER BY RANDOM()
+            LIMIT 4
+        ''', (category, product_id))
+        
+        similar_products = []
+        for row in c.fetchall():
+            product = dict(row)
+            
+            # Corriger l'URL de l'image
+            if product.get("image") and not product["image"].startswith(("http", "/")):
+                product["image"] = f"/uploads/{product['image']}"
+                
+            similar_products.append(product)
+        
+        conn.close()
+        return jsonify(similar_products)
+        
+    except Exception as e:
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({'error': str(e)}), 500
+
+@products_bp.route('/products/<int:product_id>', methods=['GET'])
+def get_product_by_id(product_id):
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT * FROM products WHERE id = ?', (product_id,))
+    row = c.fetchone()
+    conn.close()
+
+    if row is None:
+        return jsonify({'error': 'Produit non trouvé'}), 404
+
+    product = dict(row)
+
+    # Convertir les champs JSON en objets Python (listes ou dicts)
+    for json_field in ['colors_json', 'images_json', 'images_by_color_json']:
+        try:
+            if product.get(json_field):
+                product[json_field] = json.loads(product[json_field])
+            else:
+                product[json_field] = [] if json_field != 'images_by_color_json' else {}
+        except json.JSONDecodeError:
+            product[json_field] = [] if json_field != 'images_by_color_json' else {}
+
+    # Corriger l'URL de l'image principale
+    if product.get("image") and not product["image"].startswith(("http", "/")):
+        product["image"] = f"/uploads/{product['image']}"
+
+    return jsonify(product)
+
+
+
 # Route pour servir les images
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

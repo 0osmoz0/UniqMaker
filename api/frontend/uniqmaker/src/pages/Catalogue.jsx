@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useNavigate } from 'react-router-dom';
 import { 
   FiShoppingCart, 
   FiChevronDown, 
@@ -886,6 +887,13 @@ const ProductCard = ({ product, onCreateDevis }) => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const navigate = useNavigate();
+
+
+  const handleCardClick = () => {
+    navigate(`/products/${product.id}`); // ✅ corriger ici
+  };
+
 
   const parseJsonField = (field) => {
     try {
@@ -1002,6 +1010,10 @@ const ProductCard = ({ product, onCreateDevis }) => {
 
   return (
     <motion.div
+      onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="cursor-pointer relative bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col border border-gray-100 transition-all duration-300"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -1009,9 +1021,6 @@ const ProductCard = ({ product, onCreateDevis }) => {
         y: -5,
         boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)"
       }}
-      className="relative bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col border border-gray-100 transition-all duration-300"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {product.stock <= 10 && product.stock > 0 && (
         <div className="absolute top-3 left-3 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
