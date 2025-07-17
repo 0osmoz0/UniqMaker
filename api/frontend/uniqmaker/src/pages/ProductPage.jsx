@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState, useMemo } from 'react';
 import { 
   FiChevronLeft, 
@@ -20,7 +20,7 @@ import 'react-lazy-load-image-component/src/effects/blur.css';
 
 // Configuration complète des couleurs avec amélioration visuelle
 const COLOR_CONFIG = {
-  "Abricot": { hex: "#FBCEB1", text: "text-gray-900" },
+   "Abricot": { hex: "#FBCEB1", text: "text-gray-900" },
   "Anthracite": { hex: "#383E42", text: "text-white" },
   "Anthracite Chine": { hex: "#464646", text: "text-white" },
   "Aqua": { hex: "#00FFFF", text: "text-gray-900" },
@@ -207,6 +207,7 @@ const COLOR_CONFIG = {
 const ProductPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -237,7 +238,7 @@ const ProductPage = () => {
           setSelectedColor(data.colors_json[0]);
         }
 
-        // Charger les produits similaires une fois que le produit est chargé
+        // Charger les produits similaires
         const similarResponse = await fetch(`http://localhost:5001/products/${id}/similar`);
         if (similarResponse.ok) {
           const similarData = await similarResponse.json();
@@ -253,22 +254,17 @@ const ProductPage = () => {
     fetchProduct();
   }, [id]);
 
-
   function parseJsonField(field) {
     if (!field) return null;
-    
-    // Si c'est déjà un tableau ou objet, on le retourne tel quel
     if (typeof field !== 'string') return field;
     
     try {
-      // Essaye de parser comme JSON
       return JSON.parse(field);
     } catch (e) {
-      // Si ça échoue, vérifie si c'est une liste séparée par des virgules
       if (typeof field === 'string' && field.includes(',')) {
         return field.split(',').map(item => item.trim()).filter(Boolean);
       }
-      return field; // Retourne la valeur originale si on ne peut pas la parser
+      return field;
     }
   }
 
@@ -336,7 +332,6 @@ const ProductPage = () => {
       });
     }
 
-    // Ajoute toutes les images sous la clé 'all'
     imagesByColor['all'] = [...allImages];
 
     return {
@@ -346,7 +341,7 @@ const ProductPage = () => {
     };
   }, [product]);
 
-  // Images à afficher en fonction de la couleur sélectionnée
+  // Images à afficher
   const displayedImages = useMemo(() => {
     const colorKey = selectedColor || 'all';
     return (imagesByColor[colorKey] || [])
@@ -354,7 +349,7 @@ const ProductPage = () => {
       .map(img => img.url);
   }, [selectedColor, imagesByColor]);
 
-  // Met à jour l'image principale quand les images affichées changent
+  // Met à jour l'image principale
   useEffect(() => {
     if (displayedImages.length > 0) {
       setMainImage(displayedImages[0]);
@@ -812,6 +807,13 @@ const ProductPage = () => {
                       ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed' 
                       : 'bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-50 shadow-md hover:shadow-lg'
                   }`}
+                  onClick={() => navigate(`/products/${id}/personnaliser`, {
+                    state: {
+                      productData: product,
+                      selectedColor,
+                      selectedSize
+                    }
+                  })}
                 >
                   {product.stock > 0 ? 'Personnaliser maintenant' : 'Indisponible'}
                 </button>
@@ -925,39 +927,39 @@ const ProductPage = () => {
           </section>
         )}
 
-        {/* Section recommandations (optionnelle) */}
+        {/* Section recommandations */}
         <section className="mt-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-8">Produits similaires</h2>
-        {similarProducts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {similarProducts.map((product) => (
-              <motion.div 
-                key={product.id}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
-                onClick={() => navigate(`/products/${product.id}`)}
-              >
-                <div className="aspect-square bg-gray-100 flex items-center justify-center">
-                  <LazyLoadImage
-                    src={product.image || '/placeholder-product.jpg'}
-                    alt={product.name}
-                    effect="blur"
-                    className="w-full h-full object-contain p-4"
-                    placeholderSrc="/placeholder-product.jpg"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-medium text-gray-900 line-clamp-2">{product.name}</h3>
-                  <p className="text-blue-600 font-bold mt-2">{product.price?.toFixed(2)} €</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500">Aucun produit similaire trouvé</p>
-        )}
-      </section>
+          <h2 className="text-2xl font-bold text-gray-900 mb-8">Produits similaires</h2>
+          {similarProducts.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {similarProducts.map((product) => (
+                <motion.div 
+                  key={product.id}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer"
+                  onClick={() => navigate(`/products/${product.id}`)}
+                >
+                  <div className="aspect-square bg-gray-100 flex items-center justify-center">
+                    <LazyLoadImage
+                      src={product.image || '/placeholder-product.jpg'}
+                      alt={product.name}
+                      effect="blur"
+                      className="w-full h-full object-contain p-4"
+                      placeholderSrc="/placeholder-product.jpg"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-medium text-gray-900 line-clamp-2">{product.name}</h3>
+                    <p className="text-blue-600 font-bold mt-2">{product.price?.toFixed(2)} €</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">Aucun produit similaire trouvé</p>
+          )}
+        </section>
       </div>
 
       {/* Modal de zoom */}
@@ -989,7 +991,7 @@ const ProductPage = () => {
                 }}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  <path strokeLinecap="round" strokeJoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </motion.div>

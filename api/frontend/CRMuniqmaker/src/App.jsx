@@ -537,6 +537,7 @@ const getColorHex = (colorName) => {
   return "#CCCCCC"; // Couleur par défaut
 };
 
+const PLACEHOLDER_IMAGE = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 24 24" fill="%23f0f0f0"><rect width="100%" height="100%"/><text x="50%" y="50%" font-family="Arial" text-anchor="middle" dominant-baseline="middle" fill="%23666666" font-size="14">Image non disponible</text></svg>`;
 function ProductCatalog({ token, userRole }) {
   // États
   const [products, setProducts] = useState([]);
@@ -546,11 +547,15 @@ function ProductCatalog({ token, userRole }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [selectedVariants, setSelectedVariants] = useState({});
+  const [printData, setPrintData] = useState({});
+  const [loadingPrintData, setLoadingPrintData] = useState(false);
   const [modalData, setModalData] = useState({
     open: false,
     product: null,
-    imageIndex: 0
+    imageIndex: 0,
+    activeTab: 'product'
   });
+  const [showBlankImages, setShowBlankImages] = useState(false);
 
   // Refs
   const searchInputRef = useRef(null);
@@ -564,19 +569,23 @@ function ProductCatalog({ token, userRole }) {
         const response = await fetch(`${API_BASE}/products/images/full`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
+        if (response.status === 401) {
+          throw new Error("Non autorisé - Veuillez vous reconnecter");
+        }
+
         if (!response.ok) {
           throw new Error(response.statusText || "Erreur de chargement");
         }
-        
+
         const data = await response.json();
-        
+
         if (!data.products_with_images) {
           throw new Error("Format de données inattendu");
         }
-        
+
         setProducts(data.products_with_images);
-        
+
         // Initialiser les variantes sélectionnées
         const variants = {};
         data.products_with_images.forEach(product => {
@@ -585,7 +594,7 @@ function ProductCatalog({ token, userRole }) {
           }
         });
         setSelectedVariants(variants);
-        
+
       } catch (err) {
         console.error("Erreur fetchProducts:", err);
         setError(err.message || "Erreur de connexion au serveur");
@@ -597,42 +606,116 @@ function ProductCatalog({ token, userRole }) {
     fetchProducts();
   }, [token]);
 
-  // Filter products based on search term
-  const filteredProducts = products.filter(product => 
-    [product.product_name, product.master_code, product.brand]
-      .filter(Boolean)
-      .some(field => field.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Fetch print data for a product - Adapté à la nouvelle structure d'API
+  const fetchPrintData = async (masterCode) => {
+    try {
+      setLoadingPrintData(true);
+      const response = await fetch(`${API_BASE}/api/printdata/by-master-code/${masterCode}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-  // Pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+      if (response.status === 401) {
+        throw new Error("Non autorisé - Veuillez vous reconnecter");
+      }
 
-  // Get display images for product
+      if (!response.ok) {
+        throw new Error(response.statusText || "Erreur de chargement des données d'impression");
+      }
+
+      const { data } = await response.json();
+      
+      if (!data || !data.printing_positions) {
+        throw new Error("Données d'impression non disponibles");
+      }
+
+      // Transformation des données selon la structure exacte de l'API
+      const transformedData = {
+        master_data: data.master_data,
+        printing_positions: data.printing_positions.map(position => ({
+          print_position_type: position.print_position_type,
+          position_id: position.position_id,
+          max_print_size_width: position.max_print_size_width,
+          max_print_size_height: position.max_print_size_height,
+          print_size_unit: position.print_size_unit,
+          rotation: position.rotation,
+          images: (position.images || []).map(img => ({
+            url: img.print_position_image_with_area,
+            blankUrl: img.print_position_image_blank,
+            variantColor: img.variant_color,
+            isPDF: false
+          })),
+          printing_techniques: position.printing_techniques || [],
+          points: position.points || []
+        }))
+      };
+
+      setPrintData(prev => ({
+        ...prev,
+        [masterCode]: transformedData
+      }));
+
+    } catch (err) {
+      console.error("Erreur fetchPrintData:", err);
+      setPrintData(prev => ({
+        ...prev,
+        [masterCode]: { error: err.message }
+      }));
+    } finally {
+      setLoadingPrintData(false);
+    }
+  };
+
+  // Get all print images with proper URL handling - Adapté à la nouvelle structure
+  const getAllPrintImages = (masterCode) => {
+    if (!printData[masterCode]?.printing_positions) return [];
+
+    const allImages = [];
+    printData[masterCode].printing_positions.forEach(position => {
+      position.images?.forEach(img => {
+        if (img.url) {
+          allImages.push({
+            url: showBlankImages ? img.blankUrl : img.url,
+            blankUrl: img.blankUrl,
+            position: position.print_position_type,
+            positionId: position.position_id,
+            variantColor: img.variantColor,
+            techniques: position.printing_techniques?.map(t => t.id).join(', '),
+            isPDF: false,
+            maxWidth: position.max_print_size_width,
+            maxHeight: position.max_print_size_height,
+            unit: position.print_size_unit
+          });
+        }
+      });
+    });
+
+    return allImages;
+  };
+
+  // Get display images for product with error handling
   const getDisplayImages = (product) => {
     if (!product) return [];
-    
+
     const variant = selectedVariants[product.master_code];
-    if (variant?.images?.length > 0) {
-      return variant.images;
-    }
-    return product.images || [];
+    const images = variant?.images?.length > 0 ? variant.images : product.images || [];
+    
+    return images.map(img => ({
+      ...img,
+      url: img.url || PLACEHOLDER_IMAGE
+    }));
   };
 
   // Get available colors for product
   const getAvailableColors = (product) => {
     if (!product.variants) return [];
-    
+
     const colors = [];
     const seenColors = new Set();
-    
+
     product.variants.forEach(variant => {
-      // Essayer plusieurs clés possibles pour la couleur
       const colorName = variant.color || variant.color_name || variant.colour;
       const colorCode = variant.color_code || variant.color_id || colorName;
-      
+
       if (colorName && colorCode && !seenColors.has(colorCode)) {
         seenColors.add(colorCode);
         colors.push({
@@ -643,7 +726,7 @@ function ProductCatalog({ token, userRole }) {
         });
       }
     });
-    
+
     return colors;
   };
 
@@ -655,18 +738,245 @@ function ProductCatalog({ token, userRole }) {
     }));
   };
 
-  // Open image modal
+  // Open image modal with print data pre-fetch
   const openImageModal = (product, imageIndex = 0) => {
     setModalData({
       open: true,
       product,
-      imageIndex
+      imageIndex,
+      activeTab: 'product'
     });
+
+    if (!printData[product.master_code]) {
+      fetchPrintData(product.master_code);
+    }
   };
 
   // Close modal
   const closeModal = () => {
     setModalData(prev => ({ ...prev, open: false }));
+  };
+
+  // Navigate through images with boundary checks
+  const navigateImage = (direction) => {
+    const images = modalData.activeTab === 'product'
+      ? getDisplayImages(modalData.product)
+      : getAllPrintImages(modalData.product.master_code);
+
+    if (!images || images.length === 0) return;
+
+    const newIndex = direction === 'prev'
+      ? (modalData.imageIndex - 1 + images.length) % images.length
+      : (modalData.imageIndex + 1) % images.length;
+
+    setModalData(prev => ({
+      ...prev,
+      imageIndex: newIndex
+    }));
+  };
+
+  // Render print positions with enhanced error handling - Complètement adapté à la nouvelle API
+  const renderPrintPositions = () => {
+    const masterCode = modalData.product.master_code;
+    const printDataItem = printData[masterCode];
+    
+    if (!printDataItem) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          <FiLoader className="animate-spin inline-block mr-2" />
+          Chargement des données d'impression...
+        </div>
+      );
+    }
+
+    if (printDataItem.error) {
+      return (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+          <div className="flex items-center">
+            <FiAlertCircle className="text-red-500 mr-2" />
+            <p>{printDataItem.error}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!printDataItem.printing_positions || printDataItem.printing_positions.length === 0) {
+      return (
+        <div className="text-center py-4 text-gray-500">
+          <FiInfo className="inline-block mr-2" />
+          Aucune position d'impression disponible
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <label className="flex items-center mb-4 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={showBlankImages}
+            onChange={() => setShowBlankImages(!showBlankImages)}
+            className="mr-2"
+          />
+          Afficher les zones de marquage
+        </label>
+
+        {printDataItem.printing_positions.map((position, idx) => (
+          <div key={`position-${idx}`} className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium text-lg mb-2">
+              {position.print_position_type} ({position.position_id})
+            </h4>
+            
+            {position.images?.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {position.images.map((img, imgIdx) => (
+                  <div
+                    key={`img-${idx}-${imgIdx}`}
+                    className="border rounded overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      const allImages = getAllPrintImages(masterCode);
+                      const globalIndex = allImages.findIndex(i => 
+                        i.url === (showBlankImages ? img.blankUrl : img.url)
+                      );
+                      if (globalIndex >= 0) {
+                        setModalData(prev => ({
+                          ...prev,
+                          activeTab: 'print',
+                          imageIndex: globalIndex
+                        }));
+                      }
+                    }}
+                  >
+                    <img
+                      src={showBlankImages ? img.blankUrl : img.url}
+                      alt={`${position.print_position_type} - ${img.variantColor}`}
+                      className="w-full h-24 object-contain bg-white"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = PLACEHOLDER_IMAGE;
+                      }}
+                    />
+                    <div className="p-2 text-xs text-center bg-gray-100">
+                      Couleur: {img.variantColor}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">Aucune image disponible pour cette position</p>
+            )}
+
+            <div className="mt-3 text-sm space-y-1">
+              {position.max_print_size_width && position.max_print_size_height && (
+                <p>
+                  <span className="text-gray-600">Taille max: </span>
+                  {position.max_print_size_width}x{position.max_print_size_height} {position.print_size_unit}
+                </p>
+              )}
+              {position.printing_techniques?.length > 0 && (
+                <p>
+                  <span className="text-gray-600">Techniques: </span>
+                  {position.printing_techniques.map(t => t.id).join(', ')}
+                </p>
+              )}
+              {position.points?.length > 0 && (
+                <p>
+                  <span className="text-gray-600">Points: </span>
+                  {position.points.length} point{position.points.length > 1 ? 's' : ''} définis
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render the current image in modal with enhanced controls
+  const renderCurrentImage = () => {
+    const images = modalData.activeTab === 'product'
+      ? getDisplayImages(modalData.product)
+      : getAllPrintImages(modalData.product.master_code);
+
+    const currentImage = images[modalData.imageIndex];
+
+    if (!currentImage || !currentImage.url) {
+      return (
+        <div className="text-gray-400 text-center h-full flex items-center justify-center">
+          <FiImage size={64} className="mx-auto" />
+          <p>Aucune image disponible</p>
+        </div>
+      );
+    }
+
+    if (currentImage.isPDF) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center">
+          <FiFile className="text-blue-500 text-6xl mb-4" />
+          <p className="text-lg mb-4">Fichier PDF</p>
+          <button 
+            onClick={() => window.open(currentImage.url, '_blank')}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Ouvrir le PDF
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="relative h-full flex items-center justify-center">
+        <img
+          src={currentImage.url}
+          alt={modalData.activeTab === 'product'
+            ? modalData.product.product_name
+            : `Position ${currentImage.position} - ${currentImage.variantColor}`}
+          className="max-h-[70vh] max-w-full object-contain"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = PLACEHOLDER_IMAGE;
+          }}
+        />
+
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateImage('prev');
+              }}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+              aria-label="Image précédente"
+            >
+              <FiChevronLeft size={24} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateImage('next');
+              }}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+              aria-label="Image suivante"
+            >
+              <FiChevronRight size={24} />
+            </button>
+          </>
+        )}
+
+        <div className="absolute bottom-4 left-0 right-0 text-center text-sm text-white bg-black bg-opacity-50 py-1">
+          {modalData.activeTab === 'print' && (
+            <>
+              {currentImage.position && <span className="mr-3">{currentImage.position}</span>}
+              {currentImage.variantColor && <span className="mr-3">Couleur: {currentImage.variantColor}</span>}
+              {currentImage.maxWidth && currentImage.maxHeight && (
+                <span className="mr-3">{currentImage.maxWidth}x{currentImage.maxHeight}{currentImage.unit}</span>
+              )}
+            </>
+          )}
+          Image {modalData.imageIndex + 1} sur {images.length}
+        </div>
+      </div>
+    );
   };
 
   // Add to favorites
@@ -688,7 +998,7 @@ function ProductCatalog({ token, userRole }) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Erreur d'ajout aux favoris");
       }
-      
+
       alert("Produit ajouté aux favoris !");
     } catch (err) {
       console.error("Erreur addToFavorites:", err);
@@ -700,98 +1010,101 @@ const addToCatalog = async (product) => {
   if (!window.confirm(`Ajouter "${product.product_name}" au catalogue ?`)) return;
 
   try {
-    const variants = product.variants || [];
+    console.log('📦 Préparation des données du produit...', product);
 
-    // 1. Préparation des images groupées par couleur
-    const imagesByColor = variants.reduce((acc, variant) => {
-      // Ignorer les variants sans couleur ou sans images
-      if (!variant.color || !variant.images) return acc;
-      
-      const color = variant.color.trim();
-      if (!color) return acc;
-      
-      // Extraire les URLs valides
-      const urls = variant.images
-        .map(img => img.url)
-        .filter(url => url && typeof url === 'string');
-      
-      if (urls.length === 0) return acc;
-      
-      // Ajouter au tableau
-      acc.push({
-        color: color,
-        images: urls
-      });
-      
-      return acc;
-    }, []);
-
-    // 2. Création de la liste plate de toutes les images
-    const allImages = imagesByColor.flatMap(({images}) => 
-      images.map(url => ({ url }))
-      .concat(product.image ? [{ url: product.image }] : []));
-
-    // 3. Extraction des couleurs uniques
-    const colors = [...new Set(imagesByColor.map(({color}) => color))];
-
-    // 4. Téléchargement de l'image principale
-    let imageFile = null;
-    const mainImageUrl = allImages[0]?.url;
-    
-    if (mainImageUrl) {
-      try {
-        const imageResponse = await fetch(mainImageUrl);
-        const blob = await imageResponse.blob();
-        imageFile = new File([blob], `${product.master_code}.jpg`, { type: blob.type });
-      } catch (imgErr) {
-        console.warn("Erreur de téléchargement de l'image:", imgErr);
-      }
-    }
-
-    // 5. Préparation des données pour l'API
     const formData = new FormData();
-    formData.append("name", product.product_name);
-    formData.append("price", (product.price || 0) * 2);
+
+    // 1. Données de base
+    formData.append("name", product.product_name || "Produit sans nom");
+    formData.append("price", String((product.price ?? 0) * 2));
     formData.append("description", product.long_description || product.short_description || "");
     formData.append("category_level1", product.category_level1 || "Non spécifié");
-    formData.append("category_level2", product.category_level2 || "Non spécifié");
-    formData.append("category_level3", product.category_level3 || "Non spécifié");
-    formData.append("stock", product.stock || 0);
+    formData.append("category_level2", product.category_level2 || "");
+    formData.append("category_level3", product.category_level3 || "");
+    formData.append("stock", String(product.stock ?? 0));
+
+    // 2. Variantes / Couleurs / Images
+    const variants = Array.isArray(product.variants) ? product.variants : [];
+    const colors = [...new Set(variants.map(v => v.color).filter(Boolean))];
+
+    const imagesByColor = variants.reduce((acc, variant) => {
+      if (!variant.color || !Array.isArray(variant.images)) return acc;
+      const color = variant.color.trim();
+      const urls = variant.images.map(img => img.url).filter(Boolean);
+      if (color && urls.length) acc[color] = urls;
+      return acc;
+    }, {});
+
+    // Ajout des images principales si présentes
+    const allImages = [
+      ...new Set([
+        ...Object.values(imagesByColor).flat(),
+        ...(product.image ? [product.image] : [])
+      ].filter(Boolean))
+    ];
+
     formData.append("colors_json", JSON.stringify(colors));
     formData.append("images_json", JSON.stringify(allImages));
     formData.append("images_by_color_json", JSON.stringify(imagesByColor));
 
-    // 6. Ajout de l'image (fichier ou URL)
-    if (imageFile) {
-      formData.append("image", imageFile);
-    } else if (mainImageUrl) {
-      formData.append("image_url", mainImageUrl);
+    // 3. Données d'impression
+    try {
+      console.log('🖨️ Récupération des données d\'impression...');
+      const printDataResponse = await fetch(
+        `${API_BASE}/api/printdata/by-master-code/${encodeURIComponent(product.master_code)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (printDataResponse.ok) {
+        const printData = await printDataResponse.json();
+        console.log('🖨️ Données d\'impression reçues:', printData);
+
+        if (printData?.data) {
+          const enrichedPrintData = {
+            ...printData.data,
+            printing_positions: (printData.data.printing_positions || []).map(pos => ({
+              ...pos,
+              mockup_image: allImages[0] || product.image || null,
+              images: pos.images || []
+            }))
+          };
+          formData.append("print_data_json", JSON.stringify(enrichedPrintData));
+        }
+      } else {
+        console.warn('⚠️ Échec de la récupération des données d\'impression, status:', printDataResponse.status);
+      }
+    } catch (printError) {
+      console.error('❌ Erreur lors de la récupération des données d\'impression:', printError);
     }
 
-    // 7. Envoi à l'API
+    // 4. Envoi des données au serveur backend
+    console.log('🚀 Envoi des données au serveur...');
     const response = await fetch(`${API_BASE}/products`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      method: 'POST',
       body: formData,
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Erreur lors de l'ajout");
+      const errorBody = await response.json().catch(() => null);
+      console.error('❌ Réponse d\'erreur du serveur:', errorBody || response.statusText);
+      throw new Error(`Erreur serveur ${response.status}: ${JSON.stringify(errorBody)}`);
     }
 
-    alert("Produit ajouté au catalogue avec succès !");
-  } catch (err) {
-    console.error("Erreur addToCatalog:", err);
-    alert(err.message || "Une erreur est survenue");
+    const result = await response.json();
+    console.log('✅ Produit ajouté avec succès:', result);
+    alert(`Produit "${product.product_name}" ajouté avec succès !`);
+  } catch (error) {
+    console.error('❌ Erreur complète lors de l\'ajout au catalogue:', error);
+    alert(`Erreur lors de l'ajout du produit : ${error.message || error}`);
   }
 };
 
 
 
-
+  // Handle page change
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -799,6 +1112,13 @@ const addToCatalog = async (product) => {
 
   // Render pagination controls
   const renderPagination = () => {
+    const filteredProducts = products.filter(product => 
+      [product.product_name, product.master_code, product.brand]
+        .filter(Boolean)
+        .some(field => field?.toLowerCase()?.includes(searchTerm.toLowerCase()))
+    );
+
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     if (totalPages <= 1) return null;
     
     const pages = [];
@@ -887,6 +1207,18 @@ const addToCatalog = async (product) => {
     );
   };
 
+  // Filter products based on search term
+  const filteredProducts = products.filter(product => 
+    [product.product_name, product.master_code, product.brand]
+      .filter(Boolean)
+      .some(field => field?.toLowerCase()?.includes(searchTerm.toLowerCase()))
+  );
+
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
     <div className="container mx-auto px-4 py-6">
       {/* Search and filter section */}
@@ -897,7 +1229,7 @@ const addToCatalog = async (product) => {
               ref={searchInputRef}
               type="text"
               placeholder="Rechercher un produit..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -955,23 +1287,28 @@ const addToCatalog = async (product) => {
                 >
                   {/* Product image */}
                   <div 
-                    className="relative h-48 bg-gray-50 cursor-pointer"
+                    className="relative h-48 bg-gray-50 cursor-pointer group"
                     onClick={() => openImageModal(product)}
                   >
                     {mainImage ? (
                       <img
                         src={mainImage}
                         alt={product.product_name}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain group-hover:opacity-90 transition-opacity"
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = 'https://via.placeholder.com/300?text=Image+Non+Disponible';
-                          e.target.className = 'w-full h-full object-cover';
+                          e.target.src = PLACEHOLDER_IMAGE;
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300">
                         <FiImage size={48} />
+                      </div>
+                    )}
+                    
+                    {images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                        +{images.length - 1}
                       </div>
                     )}
                   </div>
@@ -998,7 +1335,7 @@ const addToCatalog = async (product) => {
                           e.stopPropagation();
                           addToFavorites(product);
                         }}
-                        className="text-indigo-600 hover:text-indigo-800 p-1"
+                        className="text-indigo-600 hover:text-indigo-800 p-1 transition-colors"
                         title="Ajouter aux favoris"
                       >
                         <FiStar />
@@ -1010,7 +1347,7 @@ const addToCatalog = async (product) => {
                             e.stopPropagation();
                             addToCatalog(product);
                           }}
-                          className="text-green-600 hover:text-green-800 p-1"
+                          className="text-green-600 hover:text-green-800 p-1 transition-colors"
                           title="Ajouter au catalogue"
                         >
                           <FiPlus />
@@ -1031,106 +1368,161 @@ const addToCatalog = async (product) => {
       {/* Image modal */}
       {modalData.open && modalData.product && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-          <div className="relative bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden">
+          <div className="relative bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <button
               onClick={closeModal}
-              className="absolute top-4 right-4 z-10 text-gray-700 hover:text-gray-900 bg-white rounded-full p-1 shadow"
+              className="absolute top-4 right-4 z-10 text-gray-700 hover:text-gray-900 bg-white rounded-full p-1 shadow transition-colors"
+              aria-label="Fermer la modale"
             >
               <FiX size={24} />
             </button>
 
-            <div className="flex flex-col md:flex-row h-full">
+            {/* Tabs */}
+            <div className="flex border-b">
+              <button
+                className={`px-4 py-2 font-medium ${modalData.activeTab === 'product' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:text-indigo-500'} transition-colors`}
+                onClick={() => setModalData(prev => ({ ...prev, activeTab: 'product', imageIndex: 0 }))}
+              >
+                Produit
+              </button>
+              <button
+                className={`px-4 py-2 font-medium ${modalData.activeTab === 'print' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:text-indigo-500'} transition-colors`}
+                onClick={() => {
+                  if (!printData[modalData.product.master_code]) return;
+                  setModalData(prev => ({ ...prev, activeTab: 'print', imageIndex: 0 }));
+                }}
+                disabled={!printData[modalData.product.master_code]}
+              >
+                Impression
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
               {/* Main image */}
               <div className="md:w-2/3 p-4 flex items-center justify-center bg-gray-50">
-                {getDisplayImages(modalData.product).length > 0 ? (
-                  <img
-                    src={getDisplayImages(modalData.product)[modalData.imageIndex]?.url}
-                    alt={modalData.product.product_name}
-                    className="max-h-[70vh] object-contain"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/800x600?text=Image+Non+Disponible';
-                    }}
-                  />
-                ) : (
-                  <div className="text-gray-400 text-center">
-                    <FiImage size={64} className="mx-auto" />
-                    <p>Aucune image disponible</p>
-                  </div>
-                )}
+                {renderCurrentImage()}
               </div>
 
-              {/* Product details */}
-              <div className="md:w-1/3 p-6 overflow-y-auto">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {modalData.product.product_name}
-                </h2>
-                
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <h3 className="font-medium text-gray-900">Référence</h3>
-                    <p className="text-gray-600">{modalData.product.master_code}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-medium text-gray-900">Prix</h3>
-                    <p className="text-gray-600">
-                      {modalData.product.price ? `${modalData.product.price.toFixed(2)} €` : 'Sur demande'}
-                    </p>
-                  </div>
-                  
-                  {modalData.product.brand && (
-                    <div>
-                      <h3 className="font-medium text-gray-900">Marque</h3>
-                      <p className="text-gray-600">{modalData.product.brand}</p>
-                    </div>
-                  )}
-                  
-                  {modalData.product.material && (
-                    <div>
-                      <h3 className="font-medium text-gray-900">Matériau</h3>
-                      <p className="text-gray-600">{modalData.product.material}</p>
-                    </div>
-                  )}
-                  
-                  {modalData.product.short_description && (
-                    <div>
-                      <h3 className="font-medium text-gray-900">Description</h3>
-                      <p className="text-gray-600">{modalData.product.short_description}</p>
-                    </div>
-                  )}
-                  
-                  {/* Color variants in modal */}
-                  {getAvailableColors(modalData.product).length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-900">Couleurs disponibles</h3>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {getAvailableColors(modalData.product).map((color, i) => (
-                          <button
-                            key={`modal-${modalData.product.master_code}-${color.code}-${i}`}
-                            className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-indigo-300 transition-all"
-                            style={{
-                              backgroundColor: color.hex,
-                              ...(selectedVariants[modalData.product.master_code]?.color_code === color.code ? {
-                                borderColor: '#6366f1',
-                                boxShadow: '0 0 0 2px #818cf8'
-                              } : {})
-                            }}
-                            title={color.name}
-                            onClick={() => {
-                              handleColorSelect(modalData.product, color);
-                              setModalData(prev => ({
-                                ...prev,
-                                imageIndex: 0
-                              }));
-                            }}
-                            aria-label={`Sélectionner la couleur ${color.name}`}
-                          />
-                        ))}
+              {/* Details panel */}
+              <div className="md:w-1/3 p-6 overflow-y-auto border-l border-gray-200">
+                {modalData.activeTab === 'product' ? (
+                  <>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {modalData.product.product_name}
+                    </h2>
+                    
+                    <div className="mt-4 space-y-4">
+                      <div>
+                        <h3 className="font-medium text-gray-900">Référence</h3>
+                        <p className="text-gray-600">{modalData.product.master_code}</p>
                       </div>
+                      
+                      <div>
+                        <h3 className="font-medium text-gray-900">Prix</h3>
+                        <p className="text-gray-600">
+                          {modalData.product.price ? `${modalData.product.price.toFixed(2)} €` : 'Sur demande'}
+                        </p>
+                      </div>
+                      
+                      {modalData.product.brand && (
+                        <div>
+                          <h3 className="font-medium text-gray-900">Marque</h3>
+                          <p className="text-gray-600">{modalData.product.brand}</p>
+                        </div>
+                      )}
+                      
+                      {modalData.product.material && (
+                        <div>
+                          <h3 className="font-medium text-gray-900">Matériau</h3>
+                          <p className="text-gray-600">{modalData.product.material}</p>
+                        </div>
+                      )}
+                      
+                      {modalData.product.short_description && (
+                        <div>
+                          <h3 className="font-medium text-gray-900">Description</h3>
+                          <p className="text-gray-600">{modalData.product.short_description}</p>
+                        </div>
+                      )}
+                      
+                      {/* Color variants in modal */}
+                      {getAvailableColors(modalData.product).length > 0 && (
+                        <div>
+                          <h3 className="font-medium text-gray-900">Couleurs disponibles</h3>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {getAvailableColors(modalData.product).map((color, i) => (
+                              <button
+                                key={`modal-${modalData.product.master_code}-${color.code}-${i}`}
+                                className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-indigo-300 transition-all"
+                                style={{
+                                  backgroundColor: color.hex,
+                                  ...(selectedVariants[modalData.product.master_code]?.color_code === color.code ? {
+                                    borderColor: '#6366f1',
+                                    boxShadow: '0 0 0 2px #818cf8'
+                                  } : {})
+                                }}
+                                title={color.name}
+                                onClick={() => {
+                                  handleColorSelect(modalData.product, color);
+                                  setModalData(prev => ({
+                                    ...prev,
+                                    imageIndex: 0
+                                  }));
+                                }}
+                                aria-label={`Sélectionner la couleur ${color.name}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                      Options d'impression
+                    </h2>
+                    
+                    {loadingPrintData && !printData[modalData.product.master_code] && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <FiLoader className="animate-spin" />
+                        <span>Chargement des informations d'impression...</span>
+                      </div>
+                    )}
+                    
+                    {printData[modalData.product.master_code] && (
+                      <div>
+                        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                          <h3 className="font-medium text-gray-900">Configuration</h3>
+                          <div className="mt-2 space-y-2 text-sm">
+                            <p>
+                              <span className="text-gray-600">Template: </span>
+                              <span className="font-medium">
+                                {printData[modalData.product.master_code].master_data.print_template || 'Non spécifié'}
+                              </span>
+                            </p>
+                            <p>
+                              <span className="text-gray-600">Manipulation: </span>
+                              <span className="font-medium">
+                                {printData[modalData.product.master_code].master_data.print_manipulation || 'Non spécifié'}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <h3 className="font-medium text-lg mb-4">Positions d'impression</h3>
+                        {renderPrintPositions()}
+                      </div>
+                    )}
+                    
+                    {!loadingPrintData && (!printData[modalData.product.master_code] || printData[modalData.product.master_code].error) && (
+                      <div className="text-gray-600">
+                        Aucune information d'impression disponible pour ce produit
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

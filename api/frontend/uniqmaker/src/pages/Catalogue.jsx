@@ -277,13 +277,18 @@ const DevisPopup = ({ product, onClose, onSubmit }) => {
   const userToken = localStorage.getItem('token');
 
   const parseJsonField = (field) => {
-    try {
-      return field ? JSON.parse(field) : [];
-    } catch (e) {
-      console.error("Error parsing JSON field:", e);
-      return [];
-    }
-  };
+  if (!field) return [];
+  
+  // Si c'est déjà un tableau ou un objet, retournez-le directement
+  if (typeof field === 'object') return field;
+  
+  try {
+    return JSON.parse(field);
+  } catch (e) {
+    console.error("Error parsing JSON field:", e);
+    return [];
+  }
+};
 
   const { allImages, imagesByColor } = useMemo(() => {
     const allImages = [];
@@ -896,26 +901,34 @@ const ProductCard = ({ product, onCreateDevis }) => {
 
 
   const parseJsonField = (field) => {
-    try {
-      return field ? JSON.parse(field) : [];
-    } catch (e) {
-      console.error("Error parsing JSON field:", e);
-      return [];
-    }
-  };
+  if (!field) return [];
+  
+  // Si c'est déjà un tableau ou un objet, retournez-le directement
+  if (typeof field === 'object') return field;
+  
+  try {
+    return JSON.parse(field);
+  } catch (e) {
+    console.error("Error parsing JSON field:", e);
+    return [];
+  }
+};
 
   const { allImages, imagesByColor } = useMemo(() => {
-    const allImages = [];
-    const imagesByColor = {};
+  const allImages = [];
+  const imagesByColor = {};
 
-    if (product.image) {
-      allImages.push({
-        url: product.image,
-        color: null
-      });
-    }
+  // Gestion de l'image principale
+  if (product.image) {
+    allImages.push({
+      url: product.image,
+      color: null
+    });
+  }
 
-    const additionalImages = parseJsonField(product.images_json);
+  // Gestion des images supplémentaires
+  const additionalImages = parseJsonField(product.images_json);
+  if (Array.isArray(additionalImages)) {
     additionalImages.forEach(img => {
       if (img?.url) {
         allImages.push({
@@ -924,33 +937,30 @@ const ProductCard = ({ product, onCreateDevis }) => {
         });
       }
     });
+  }
 
-    const colorImagesData = parseJsonField(product.images_by_color_json);
-    
-    if (Array.isArray(colorImagesData)) {
-      colorImagesData.forEach(item => {
-        if (item.color && item.images) {
-          imagesByColor[item.color] = item.images.map(url => ({
-            url,
-            color: item.color
-          }));
+  // Gestion des images par couleur
+  const colorImagesData = parseJsonField(product.images_by_color_json);
+  
+  if (colorImagesData && typeof colorImagesData === 'object') {
+    Object.entries(colorImagesData).forEach(([color, urls]) => {
+      if (color && urls) {
+        if (!Array.isArray(urls)) {
+          // Si ce n'est pas un tableau, essayez de le convertir
+          urls = [urls].filter(Boolean);
         }
-      });
-    } else if (typeof colorImagesData === 'object') {
-      Object.entries(colorImagesData).forEach(([color, urls]) => {
-        if (color && urls) {
-          imagesByColor[color] = urls.map(url => ({
-            url,
-            color
-          }));
-        }
-      });
-    }
+        
+        imagesByColor[color] = urls.map(url => ({
+          url,
+          color
+        }));
+      }
+    });
+  }
 
-    imagesByColor['all'] = [...allImages];
-
-    return { allImages, imagesByColor };
-  }, [product.image, product.images_json, product.images_by_color_json]);
+  imagesByColor['all'] = [...allImages];
+  return { allImages, imagesByColor };
+}, [product.image, product.images_json, product.images_by_color_json]);
 
   const availableColors = useMemo(() => {
     const colors = new Set();
@@ -1181,27 +1191,49 @@ const Catalogue = () => {
   });
   const y = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`${API_BASE}/products`);
-        if (!response.ok) throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-        
-        let data = await response.json();
-        data = Array.isArray(data) ? data.filter(p => p.image || (p.images_json && JSON.parse(p.images_json).length > 0)) : [];
-        
-        setProducts(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+const parseJsonField = (field) => {
+  if (!field) return [];
+  
+  // Si c'est déjà un tableau ou un objet, retournez-le directement
+  if (typeof field === 'object') return field;
+  
+  try {
+    return JSON.parse(field);
+  } catch (e) {
+    console.error("Error parsing JSON field:", e);
+    return [];
+  }
+};
 
-    fetchProducts();
-  }, []);
+useEffect(() => {
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE}/products`);
+      if (!response.ok) throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      
+      let data = await response.json();
+      
+      // Assurez-vous que data est un tableau
+      if (!Array.isArray(data)) {
+        throw new Error("Les données reçues ne sont pas un tableau");
+      }
+      
+      // Filtrez les produits sans image
+      data = data.filter(p => p.image || (p.images_json && parseJsonField(p.images_json).length > 0));
+      
+      setProducts(data);
+    } catch (err) {
+      console.error("Erreur de chargement:", err);
+      setError(err.message || "Une erreur est survenue lors du chargement des produits");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProducts();
+}, []);
 
   const categories = useMemo(() => {
     const cats = [];
@@ -1815,6 +1847,6 @@ const Catalogue = () => {
       )}
     </div>
   );
-};
+}; 
 
 export default Catalogue;

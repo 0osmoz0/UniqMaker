@@ -1,4 +1,4 @@
-from flask import Blueprint, Flask, request, jsonify
+from flask import Blueprint, Flask, request, jsonify, current_app
 from flask_cors import CORS
 import sqlite3
 import json
@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import requests
 import os
 from dotenv import load_dotenv
+from uuid import uuid4
 import jwt
 import traceback
 from functools import wraps
@@ -27,6 +28,8 @@ CORS(app, origins=["http://localhost:3000", "http://localhost:5173"], supports_c
 
 DATABASE = "midocean_crm.db"
 UPLOAD_FOLDER = 'static/uploads'
+app.config['DATABASE'] = DATABASE
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 API_KEY = os.getenv("API_KEY")
 JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
@@ -78,9 +81,11 @@ API_ENDPOINTS = {
 # --- DB init & connection helpers ---
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
+    # Remplace current_app par app si tu es hors contexte requête
+    conn = sqlite3.connect(app.config['DATABASE'])
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     conn = get_db()
@@ -172,6 +177,8 @@ def init_db():
 
 # --- JWT token utils ---
 
+
+
 def generate_token(user_id):
     return jwt.encode(
         {"user_id": user_id, "exp": datetime.utcnow() + timedelta(hours=6)},
@@ -198,6 +205,15 @@ def auth_required(f):
             return jsonify({"message": "Token invalide"}), 401
         return f(*args, **kwargs)
     return decorated
+    
+def parse_json_safe(json_str, default=None):
+    if json_str is None:
+        return default
+    try:
+        return json.loads(json_str)
+    except (json.JSONDecodeError, TypeError):
+        return default
+
 
 
 # --- Routes ---
@@ -854,6 +870,87 @@ def get_similar_products(product_id):
         if 'conn' in locals():
             conn.close()
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/printdata/by-master-code/<string:master_code>', methods=['GET'])
+def get_print_data_by_master_code(master_code):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        
+        # Get latest print data
+        c.execute("""
+            SELECT data FROM api_data 
+            WHERE endpoint = 'printdata'
+            ORDER BY fetched_at DESC 
+            LIMIT 1
+        """)
+        row = c.fetchone()
+        
+        if not row:
+            return jsonify({"error": "No print data found"}), 404
+
+        print_data = json.loads(row['data'])
+        result = None
+
+        if 'products' in print_data:
+            for product in print_data['products']:
+                if product.get('master_code') == master_code:
+                    result = {
+                        'master_data': {
+                            'master_code': product.get('master_code'),
+                            'master_id': product.get('master_id'),
+                            'print_manipulation': product.get('print_manipulation'),
+                            'print_template': product.get('print_template'),
+                            'item_color_numbers': product.get('item_color_numbers', [])
+                        },
+                        'printing_positions': []
+                    }
+
+                    for position in product.get('printing_positions', []):
+                        position_data = {
+                            'position_id': position.get('position_id'),
+                            'print_position_type': position.get('print_position_type'),
+                            'max_print_size_width': position.get('max_print_size_width'),
+                            'max_print_size_height': position.get('max_print_size_height'),
+                            'print_size_unit': position.get('print_size_unit'),
+                            'rotation': position.get('rotation'),
+                            'images': position.get('images', []),
+                            'points': position.get('points', []),
+                            'printing_techniques': []
+                        }
+
+                        for tech_id in position.get('printing_techniques', []):
+                            for global_tech in print_data.get('printing_techniques', []):
+                                if global_tech.get('id') == tech_id:
+                                    position_data['printing_techniques'].append({
+                                        'id': tech_id,
+                                        'name': global_tech.get('name', []),
+                                        'default': global_tech.get('default', False),
+                                        'max_colours': global_tech.get('max_colours')
+                                    })
+                                    break
+
+                        result['printing_positions'].append(position_data)
+                    break
+
+        if not result:
+            return jsonify({"error": f"Product with master_code {master_code} not found"}), 404
+
+        return jsonify({
+            'status': 'success',
+            'data': result
+        })
+
+    except Exception as e:
+        app.logger.error(f"Error in get_print_data_by_master_code: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Internal server error'
+        }), 500
+    finally:
+        conn.close()
+
+
 
 @products_bp.route('/products/<int:product_id>', methods=['GET'])
 def get_product_by_id(product_id):
@@ -864,125 +961,191 @@ def get_product_by_id(product_id):
     row = c.fetchone()
     conn.close()
 
-    if row is None:
+    if not row:
         return jsonify({'error': 'Produit non trouvé'}), 404
 
     product = dict(row)
+    for field in ['colors_json', 'images_json', 'images_by_color_json', 'print_data_json']:
+        product[field] = parse_json_safe(product.get(field), [] if 'by_color' not in field else {})
 
-    # Convertir les champs JSON en objets Python (listes ou dicts)
-    for json_field in ['colors_json', 'images_json', 'images_by_color_json']:
-        try:
-            if product.get(json_field):
-                product[json_field] = json.loads(product[json_field])
-            else:
-                product[json_field] = [] if json_field != 'images_by_color_json' else {}
-        except json.JSONDecodeError:
-            product[json_field] = [] if json_field != 'images_by_color_json' else {}
-
-    # Corriger l'URL de l'image principale
     if product.get("image") and not product["image"].startswith(("http", "/")):
         product["image"] = f"/uploads/{product['image']}"
 
     return jsonify(product)
 
 
-
-# Route pour servir les images
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
-
-@app.route('/products', methods=['GET'])
+@products_bp.route('/products', methods=['GET'])
 def get_products():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute('SELECT * FROM products')
-    rows = c.fetchall()
-    conn.close()
+    try:
+        conn = sqlite3.connect(app.config['DATABASE'])
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT * FROM products')
+        rows = c.fetchall()
+        conn.close()
 
-    products = []
-    for row in rows:
+        products = []
+        for row in rows:
+            product = dict(row)
+            for field in ['colors_json', 'images_json', 'images_by_color_json', 'print_data_json']:
+                default = [] if 'by_color' not in field and 'print_data' not in field else {}
+                product[field] = parse_json_safe(product.get(field), default)
+
+            if product.get("image") and not product["image"].startswith(("http", "/")):
+                product["image"] = f"/uploads/{product['image']}"
+
+            products.append(product)
+
+        return jsonify(products)
+
+    except Exception as e:
+        print("❌ Erreur /products :", str(e))
+        traceback.print_exc()
+        return jsonify({"error": "Erreur serveur"}), 500
+
+
+
+@products_bp.route('/products/<int:id>', methods=['GET'])
+def get_product(id):
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT * FROM products WHERE id = ?', (id,))
+        row = c.fetchone()
+        conn.close()
+
+        if row is None:
+            return jsonify({'error': 'Produit non trouvé'}), 404
+
         product = dict(row)
-        
-        # Assurer que les champs JSON sont valides
-        for json_field in ['colors_json', 'images_json', 'images_by_color_json']:
-            try:
-                if product.get(json_field):
-                    json.loads(product[json_field])
-            except json.JSONDecodeError:
-                product[json_field] = '[]'
-        
-        # Corriger les URLs d'images
+        product['colors_json'] = parse_json_safe(product.get('colors_json'), [])
+        product['images_json'] = parse_json_safe(product.get('images_json'), [])
+        product['images_by_color_json'] = parse_json_safe(product.get('images_by_color_json'), {})
+        product['print_data_json'] = parse_json_safe(product.get('print_data_json'), {})
+
         if product.get("image") and not product["image"].startswith(("http", "/")):
             product["image"] = f"/uploads/{product['image']}"
-        
-        products.append(product)
 
-    return jsonify(products)
+        return jsonify(product)
+
+    except Exception as e:
+        print("❌ Erreur /products/<id> :", str(e))
+        traceback.print_exc()
+        return jsonify({"error": "Erreur serveur"}), 500
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 @products_bp.route('/products', methods=['POST'])
 def create_product():
     try:
+        # Champs obligatoires
         name = request.form.get('name')
-        price = float(request.form.get('price', 0))
-        description = request.form.get('description')
-        category_level1 = request.form.get('category_level1')
-        category_level2 = request.form.get('category_level2')
-        category_level3 = request.form.get('category_level3')
-        stock = int(request.form.get('stock', 0))
-        colors_json = request.form.get('colors_json')
-        images_json = request.form.get('images_json')
-        images_by_color_json = request.form.get('images_by_color_json')
-        image_path = None
+        price = request.form.get('price')
+        if not name or not price:
+            return jsonify({'error': 'Le nom et le prix sont obligatoires'}), 400
 
-        if 'image' in request.files:
-            image = request.files['image']
-            if image.filename != '':
-                filename = secure_filename(f"{uuid4().hex}_{image.filename}")
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                image.save(os.path.join(UPLOAD_FOLDER, filename))
-                image_path = f"/uploads/{filename}"
+        product_data = {
+            'name': name,
+            'price': float(price),
+            'description': request.form.get('description', ''),
+            'category_level1': request.form.get('category_level1', ''),
+            'category_level2': request.form.get('category_level2', ''),
+            'category_level3': request.form.get('category_level3', ''),
+            'stock': int(request.form.get('stock', 0)),
+            'image': None
+        }
+
+        # Image uploadée
+        if 'image' in request.files and request.files['image'].filename:
+            image_file = request.files['image']
+            filename = secure_filename(f"{uuid4().hex}_{image_file.filename}")
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            image_file.save(image_path)
+            product_data['image'] = filename
+
+        # Image depuis URL
         elif request.form.get('image_url'):
-            image_path = request.form.get('image_url')
+            try:
+                image_url = request.form['image_url']
+                response = requests.get(image_url, timeout=10)
+                response.raise_for_status()
+                ext = os.path.splitext(image_url)[1] or '.jpg'
+                filename = secure_filename(f"{uuid4().hex}{ext}")
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                with open(image_path, 'wb') as f:
+                    f.write(response.content)
+                product_data['image'] = filename
+            except Exception as e:
+                app.logger.error(f"[Image] Erreur téléchargement image depuis URL: {e}")
 
-        conn = sqlite3.connect(DATABASE)
-        c = conn.cursor()
-        c.execute('''
+        # Champs JSON
+        json_fields = ['colors_json', 'images_json', 'images_by_color_json', 'print_data_json']
+        for field in json_fields:
+            raw = request.form.get(field)
+            if raw:
+                try:
+                    product_data[field] = json.loads(raw)
+                except json.JSONDecodeError:
+                    app.logger.warning(f"[JSON] Erreur décodage {field}")
+                    product_data[field] = [] if 'json' in field else {}
+            else:
+                product_data[field] = [] if 'json' in field else {}
+
+        # Normalisation des positions d'impression
+        print_data = product_data['print_data_json']
+        if isinstance(print_data, dict) and 'printing_positions' in print_data:
+            for pos in print_data['printing_positions']:
+                if isinstance(pos, dict):
+                    pos['position_id'] = pos.get('position_id', str(uuid4()))
+                    pos['position_name'] = pos.get('position_name', 'Position inconnue')
+                    pos['points'] = pos.get('points', [])
+                    pos['images'] = pos.get('images', [])
+
+        # Insertion en base
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
             INSERT INTO products (
-                name,
-                price,
-                image,
-                category_level1,
-                category_level2,
-                category_level3,
-                description,
-                stock,
-                colors_json,
-                images_json,
-                images_by_color_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                name, price, image, description,
+                category_level1, category_level2, category_level3,
+                stock, colors_json, images_json,
+                images_by_color_json, print_data_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            name,
-            price,
-            image_path,
-            category_level1,
-            category_level2,
-            category_level3,
-            description,
-            stock,
-            colors_json,
-            images_json,
-            images_by_color_json
+            product_data['name'],
+            product_data['price'],
+            product_data['image'],
+            product_data['description'],
+            product_data['category_level1'],
+            product_data['category_level2'],
+            product_data['category_level3'],
+            product_data['stock'],
+            json.dumps(product_data['colors_json']),
+            json.dumps(product_data['images_json']),
+            json.dumps(product_data['images_by_color_json']),
+            json.dumps(product_data['print_data_json']),
         ))
-
         conn.commit()
+        product_id = cursor.lastrowid
         conn.close()
 
-        return jsonify({'message': 'Produit ajouté avec succès'}), 201
+        return jsonify({
+            'message': 'Produit créé avec succès',
+            'product_id': product_id,
+            'print_data': product_data['print_data_json']
+        }), 201
 
+    except ValueError as e:
+        return jsonify({'error': f'Donnée invalide: {str(e)}'}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        app.logger.error(f"[SERVER ERROR] {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': 'Erreur interne du serveur', 'details': str(e)}), 500
+    
 app.register_blueprint(products_bp)
 
 # --- Routes pour les devis ---
